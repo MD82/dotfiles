@@ -1,0 +1,81 @@
+add_newline = false
+scan_timeout = 500
+format = """
+$username$hostname$directory$git_branch$git_status$python$nodejs$java$status
+$character"""
+
+# ── 사용자 / 호스트 ───────────────────────────────────
+[username]
+show_always = true
+format = "[$user]($style)"
+style_user = "bold #7aa2f7"
+style_root = "bold red"
+
+[hostname]
+ssh_only = false         # 로컬 WSL 세션에서도 표시
+format = "[@$hostname]($style) "
+style = "#9ece6a"
+trim_at = "."
+
+# ── 경로 ──────────────────────────────────────────────
+[directory]
+truncation_length = 3
+truncate_to_repo = false
+format = "[in ]($style)[$path]($style)[$read_only]($read_only_style) "
+style = "bold #e0af68"
+read_only = " 󰌾"
+read_only_style = "#f7768e"
+
+# ── Git ───────────────────────────────────────────────
+[git_branch]
+symbol = " "
+format = "[on ]($style)[$symbol$branch]($style)"
+style = "#bb9af7"
+
+[git_status]
+format = '([ \[$all_status$ahead_behind\]]($style)) '
+style = "#f7768e"
+conflicted = "⚡"
+ahead = "↑${count}"
+behind = "↓${count}"
+diverged = "↕"
+untracked = "?"
+stashed = "≡"
+modified = "±${count}"
+staged = "+${count}"
+deleted = "✘${count}"
+
+# ── Python (venv 포함, .py 파일 있을 때만) ────────────
+[python]
+symbol = " "
+format = '[${symbol}${pyenv_prefix}${version}(\($virtualenv\))]($style) '
+style = "#e0af68"
+detect_files = ["requirements.txt", "pyproject.toml", ".python-version"]
+
+# ── Node.js / TypeScript ──────────────────────────────
+[nodejs]
+symbol = "⬢ "
+format = "[$symbol$version]($style) "
+style = "#9ece6a"
+detect_files = ["package.json", ".node-version"]
+
+# ── Java ──────────────────────────────────────────────
+[java]
+symbol = " "
+format = "[$symbol$version]($style) "
+style = "#f7768e"
+detect_files = ["pom.xml", "build.gradle"]
+
+# ── SSH 표시 (SSH 접속 시에만 자동 표시) ─────────────
+# username + hostname이 이미 표시되므로 별도 모듈 불필요
+# SSH 여부는 hostname.ssh_only = true/false 로 제어
+
+# ── 실행 결과 / 커서 ──────────────────────────────────
+[status]
+disabled = false
+format = "[✘ $status]($style) "
+style = "bold #f7768e"
+
+[character]
+success_symbol = "[❯](bold #9ece6a) "
+error_symbol   = "[❯](bold #f7768e) "

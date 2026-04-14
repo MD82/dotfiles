@@ -1,0 +1,5 @@
+# nvim lazy lock (환경마다 다를 수 있음)
+nvim/.config/nvim/lazy-lock.json
+
+# 백업 파일
+*.bak

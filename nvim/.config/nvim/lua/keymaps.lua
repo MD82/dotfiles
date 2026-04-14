@@ -1,0 +1,28 @@
+local map = vim.keymap.set
+
+-- 저장 / 종료
+map("n", "<leader>w", "<cmd>w<cr>",  { desc = "Save" })
+map("n", "<leader>q", "<cmd>q<cr>",  { desc = "Quit" })
+
+-- 창 이동 (Ctrl + hjkl)
+map("n", "<C-h>", "<C-w>h", { desc = "Move left" })
+map("n", "<C-j>", "<C-w>j", { desc = "Move down" })
+map("n", "<C-k>", "<C-w>k", { desc = "Move up" })
+map("n", "<C-l>", "<C-w>l", { desc = "Move right" })
+
+-- 버퍼 이동
+map("n", "<S-h>", "<cmd>bprevious<cr>", { desc = "Prev buffer" })
+map("n", "<S-l>", "<cmd>bnext<cr>",     { desc = "Next buffer" })
+
+-- 들여쓰기 유지
+map("v", "<", "<gv")
+map("v", ">", ">gv")
+
+-- 줄 이동 (Alt + j/k)
+map("n", "<A-j>", "<cmd>m .+1<cr>==",  { desc = "Move line down" })
+map("n", "<A-k>", "<cmd>m .-2<cr>==",  { desc = "Move line up" })
+map("v", "<A-j>", ":m '>+1<cr>gv=gv",  { desc = "Move line down" })
+map("v", "<A-k>", ":m '<-2<cr>gv=gv",  { desc = "Move line up" })
+
+-- ESC 대체
+map("i", "jk", "<ESC>", { desc = "Escape insert mode" })
