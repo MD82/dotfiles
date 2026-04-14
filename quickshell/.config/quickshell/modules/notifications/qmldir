@@ -1,0 +1,5 @@
+module modules.notifications
+singleton NotificationService 1.0 NotificationService.qml
+NotificationCenter 1.0 NotificationCenter.qml
+NotificationCard 1.0 NotificationCard.qml
+NotificationToast 1.0 NotificationToast.qml

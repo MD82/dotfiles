@@ -1,0 +1,3 @@
+module modules.bar
+TopBar 1.0 TopBar.qml
+BottomBar 1.0 BottomBar.qml

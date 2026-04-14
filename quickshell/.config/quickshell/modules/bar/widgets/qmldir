@@ -1,0 +1,8 @@
+module modules.bar.widgets
+IslandBase 1.0 IslandBase.qml
+WorkspaceIsland 1.0 WorkspaceIsland.qml
+WorkspacePill 1.0 WorkspacePill.qml
+ClockIsland 1.0 ClockIsland.qml
+SystemIsland 1.0 SystemIsland.qml
+NotifBell 1.0 NotifBell.qml
+StatsIsland 1.0 StatsIsland.qml

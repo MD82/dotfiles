@@ -1,0 +1,1205 @@
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
+import Quickshell
+import Quickshell.Hyprland
+import Quickshell.Wayland
+import Quickshell.Wayland._WlrLayerShell
+import Quickshell.Io
+import Quickshell.Services.Pipewire
+
+ShellRoot {
+    id: root
+
+    // ── 상태 ──────────────────────────────────────────────
+    property bool launcherOpen: false
+    property bool volumeOpen:   false
+    property bool overviewOpen: false
+    property int overviewIndex: 0
+    property real currentVolume: 0
+    property bool currentMuted: false
+
+    // ── Claude Code 테마 색상 ─────────────────────────────
+    readonly property color bgColor:            "#1c1c1e"
+    readonly property color panelColor:         "#252528"
+    readonly property color surfaceColor:       "#2e2e32"
+    readonly property color surfaceHoverColor:  "#38383d"
+    readonly property color borderColor:        "#3a3a3f"
+    readonly property color accentColor:        "#e8704a"
+    readonly property color accentHoverColor:   "#ed8563"
+    readonly property color accentTextColor:    "#ffffff"
+    readonly property color textColor:          "#f0f0ee"
+    readonly property color mutedTextColor:     "#a0a09a"
+    readonly property color secondaryTextColor: "#6e6e68"
+    readonly property color successColor:       "#6abf7b"
+
+    readonly property color workspaceActiveColor: "#35353a"
+    readonly property color workspaceTextColor:   "#f0f0ee"
+    readonly property color urgentColor:          "#e05555"
+    readonly property color inputBorderColor:     "#3f3f45"
+    readonly property int   popupYOffset:         48
+
+    // ── 오디오 헬퍼 ───────────────────────────────────────
+    readonly property bool   sinkReady: Pipewire.ready
+                                        && Pipewire.defaultAudioSink != null
+                                        && Pipewire.defaultAudioSink.ready
+                                        && Pipewire.defaultAudioSink.audio != null
+    readonly property var    audioSink: sinkReady ? Pipewire.defaultAudioSink.audio : null
+    readonly property bool   isMuted:   sinkReady && currentMuted
+
+    function clampVolume(v) {
+        const n = Number(v)
+        return isFinite(n) ? Math.max(0, Math.min(1.0, n)) : 0
+    }
+
+    function volumePercentText() {
+        return sinkReady ? Math.round(clampVolume(currentVolume) * 100) + "%" : "--"
+    }
+
+    function volumeIcon() {
+        if (!sinkReady)  return "VOL --"
+        if (isMuted)     return "VOL 🔇"
+        return "VOL " + volumePercentText()
+    }
+
+    function setSinkVolume(v) {
+        if (!sinkReady) return
+        currentVolume = clampVolume(v)
+        audioSink.volume = currentVolume
+    }
+
+    function toggleMute() {
+        if (!sinkReady) return
+        audioSink.muted = !audioSink.muted
+    }
+
+    function syncAudioStateFromSystem() {
+        currentVolume = sinkReady ? clampVolume(audioSink.volume) : 0
+        currentMuted = sinkReady ? Boolean(audioSink.muted) : false
+    }
+
+    function setOverviewOpen(open) {
+        overviewOpen = open
+        if (open) {
+            launcherOpen = false
+            volumeOpen = false
+            syncOverviewSelection()
+        }
+    }
+
+    function toggleOverview() {
+        setOverviewOpen(!overviewOpen)
+    }
+
+    function currentFocusedWorkspaceIndex() {
+        for (let i = 0; i < Hyprland.workspaces.length; i++) {
+            if (Hyprland.workspaces[i] && Hyprland.workspaces[i].focused)
+                return i
+        }
+
+        return 0
+    }
+
+    function syncOverviewSelection() {
+        overviewIndex = Math.max(0, Math.min(
+            Hyprland.workspaces.length - 1,
+            currentFocusedWorkspaceIndex()
+        ))
+    }
+
+    function moveOverviewSelection(delta) {
+        if (Hyprland.workspaces.length === 0)
+            return
+
+        overviewIndex = Math.max(0, Math.min(
+            Hyprland.workspaces.length - 1,
+            overviewIndex + delta
+        ))
+    }
+
+    function modelCount(model) {
+        if (model === null || model === undefined)
+            return 0
+        if (typeof model.count === "number")
+            return model.count
+        if (typeof model.length === "number")
+            return model.length
+        return 0
+    }
+
+    Component.onCompleted: syncAudioStateFromSystem()
+
+    IpcHandler {
+        target: "overview"
+        function open(): void   { root.setOverviewOpen(true) }
+        function close(): void  { root.setOverviewOpen(false) }
+        function toggle(): void { root.toggleOverview() }
+    }
+
+    // ── 런처 헬퍼 ─────────────────────────────────────────
+    function matchesQuery(entry, query) {
+        if (!query || query.trim() === "")
+            return !entry.noDisplay
+        const q = query.toLowerCase()
+        return !entry.noDisplay && (
+            (entry.name        || "").toLowerCase().includes(q) ||
+            (entry.genericName || "").toLowerCase().includes(q) ||
+            (entry.comment     || "").toLowerCase().includes(q)
+        )
+    }
+
+    function isYaziEntry(entry) {
+        const id = String(entry?.id || "").toLowerCase()
+        const name = String(entry?.name || "").toLowerCase()
+        return id.includes("yazi") || name === "yazi"
+    }
+
+    function launchEntry(entry) {
+        if (!entry) return
+        if (isYaziEntry(entry)) {
+            launcherProcess.exec(["foot", "-e", "yazi"])
+            launcherOpen = false
+            return
+        }
+        entry.execute()
+        launcherOpen = false
+    }
+
+    function launchFirst() {
+        const count = launcherList.count
+        for (let i = 0; i < count; i++) {
+            const item = launcherList.itemAtIndex(i)
+            if (item && item.appVisible) {
+                launchEntry(item.modelData)
+                return
+            }
+        }
+    }
+
+    Process { id: launcherProcess }
+
+    PwObjectTracker {
+        objects: [Pipewire.defaultAudioSink]
+    }
+
+    // ── 볼륨 동기화 ───────────────────────────────────────
+    Connections {
+        target: root
+        function onSinkReadyChanged() { root.syncAudioStateFromSystem() }
+        function onCurrentVolumeChanged() { if (!volumeSlider.pressed) volumeSlider.syncFromSink() }
+    }
+
+    Connections {
+        target: Pipewire
+        function onDefaultAudioSinkChanged() { root.syncAudioStateFromSystem() }
+    }
+
+    Connections {
+        target: Pipewire.defaultAudioSink
+        enabled: Pipewire.defaultAudioSink != null
+        function onReadyChanged() { root.syncAudioStateFromSystem() }
+    }
+
+    Connections {
+        target: root.audioSink
+        enabled: root.sinkReady
+        function onVolumeChanged() { root.syncAudioStateFromSystem() }
+        function onMutedChanged()  { root.syncAudioStateFromSystem() }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  바 (상단 패널)
+    // ═══════════════════════════════════════════════════════
+    WlrLayershell {
+        id: bar
+        layer: WlrLayer.Top
+        namespace: "quickshell-bar"
+        anchors { top: true; left: true; right: true }
+        implicitHeight: 48
+        color: root.bgColor
+
+        Rectangle {
+            anchors.fill: parent
+            color: root.bgColor
+
+            // 하단 구분선
+            Rectangle {
+                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                height: 1
+                color: root.borderColor
+            }
+
+            SystemClock { id: clock; precision: SystemClock.Minutes }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 16
+                anchors.rightMargin: 16
+                spacing: 8
+
+                // ── Apps 버튼 ──────────────────────────────
+                Rectangle {
+                    id: launcherButton
+                    Layout.preferredWidth: 80
+                    Layout.preferredHeight: 34
+                    radius: 8
+                    color: root.launcherOpen ? root.accentColor : root.surfaceColor
+
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        color: root.launcherOpen ? root.accentTextColor : root.textColor
+                        text: "Apps"
+                        font { pixelSize: 13; weight: Font.DemiBold }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.launcherOpen = !root.launcherOpen
+                            if (root.launcherOpen) root.volumeOpen = false
+                        }
+                    }
+                }
+
+                // ── Expo 버튼 ──────────────────────────────
+                Rectangle {
+                    id: overviewButton
+                    Layout.preferredWidth: 80
+                    Layout.preferredHeight: 34
+                    radius: 8
+                    color: root.overviewOpen ? root.accentColor : root.surfaceColor
+
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        color: root.overviewOpen ? root.accentTextColor : root.textColor
+                        text: "Expo"
+                        font { pixelSize: 13; weight: Font.DemiBold }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.toggleOverview()
+                    }
+                }
+
+                // ── 구분선 ─────────────────────────────────
+                Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 20
+                    color: root.borderColor
+                }
+
+                // ── 워크스페이스 ───────────────────────────
+                Row {
+                    spacing: 5
+
+                    WheelHandler {
+                        target: parent
+                        onWheel: (event) => {
+                            if (event.angleDelta.y > 0)
+                                Hyprland.dispatch("workspace", "-1")
+                            else
+                                Hyprland.dispatch("workspace", "+1")
+                        }
+                    }
+
+                    Repeater {
+                        model: Hyprland.workspaces
+
+                        delegate: Rectangle {
+                            required property var modelData
+
+                            width: modelData.focused ? 34 : 28
+                            height: 28
+                            radius: 7
+                            color: modelData.focused
+                                ? root.accentColor
+                                : modelData.active
+                                    ? root.surfaceHoverColor
+                                    : root.surfaceColor
+                            border.width: modelData.urgent ? 1 : 0
+                            border.color: root.urgentColor
+
+                            Behavior on width { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: 120 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                color: modelData.focused ? root.accentTextColor : root.textColor
+                                text: modelData.name
+                                font { pixelSize: 12; weight: Font.DemiBold }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: modelData.activate()
+                            }
+                        }
+                    }
+                }
+
+                // ── 구분선 ─────────────────────────────────
+                Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 20
+                    color: root.borderColor
+                }
+
+                // ── 활성 창 제목 ───────────────────────────
+                Item {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 34
+
+                    Text {
+                        anchors { fill: parent; leftMargin: 8 }
+                        verticalAlignment: Text.AlignVCenter
+                        color: root.textColor
+                        elide: Text.ElideRight
+                        text: Hyprland.activeToplevel?.title ?? ""
+                        font { pixelSize: 13 }
+                    }
+                }
+
+                // ── 구분선 ─────────────────────────────────
+                Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 20
+                    color: root.borderColor
+                }
+
+                // ── 모니터명 ───────────────────────────────
+                Text {
+                    color: root.mutedTextColor
+                    text: Hyprland.focusedMonitor?.name ?? "-"
+                    font { pixelSize: 12 }
+                }
+
+                // ── 구분선 ─────────────────────────────────
+                Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 20
+                    color: root.borderColor
+                }
+
+                // ── 볼륨 버튼 ──────────────────────────────
+                Rectangle {
+                    id: volumeButton
+                    Layout.preferredWidth: 100
+                    Layout.preferredHeight: 34
+                    radius: 8
+                    color: root.volumeOpen ? root.accentColor : root.surfaceColor
+
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        color: root.volumeOpen ? root.accentTextColor : root.textColor
+                        text: root.volumeIcon()
+                        font { pixelSize: 13; weight: Font.DemiBold }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.volumeOpen = !root.volumeOpen
+                            if (root.volumeOpen) root.launcherOpen = false
+                        }
+                    }
+                }
+
+                // ── 시계 ───────────────────────────────────
+                Text {
+                    id: clockText
+                    color: root.textColor
+                    text: Qt.formatDateTime(clock.date, "MM-dd ddd  HH:mm")
+                    font { pixelSize: 13; weight: Font.DemiBold }
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  Workspace Overview
+    // ═══════════════════════════════════════════════════════
+    WlrLayershell {
+        id: overviewLayer
+        visible: root.overviewOpen
+        layer: WlrLayer.Overlay
+        keyboardFocus: WlrKeyboardFocus.Exclusive
+        namespace: "quickshell-overview"
+        anchors { top: true; left: true; right: true; bottom: true }
+        color: "transparent"
+
+        FocusScope {
+            id: overviewRoot
+            anchors.fill: parent
+            focus: root.overviewOpen
+
+            onVisibleChanged: if (visible) forceActiveFocus()
+
+            Keys.onPressed: (event) => {
+                switch (event.key) {
+                case Qt.Key_Escape:
+                    root.setOverviewOpen(false)
+                    event.accepted = true
+                    break
+                case Qt.Key_Up:
+                    root.moveOverviewSelection(-1)
+                    event.accepted = true
+                    break
+                case Qt.Key_Down:
+                    root.moveOverviewSelection(1)
+                    event.accepted = true
+                    break
+                case Qt.Key_Return:
+                case Qt.Key_Enter: {
+                    const ws = Hyprland.workspaces[root.overviewIndex]
+                    if (ws) {
+                        ws.activate()
+                        root.setOverviewOpen(false)
+                    }
+                    event.accepted = true
+                    break
+                }
+                }
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                color: Qt.rgba(0, 0, 0, 0.75)
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: root.setOverviewOpen(false)
+                }
+
+                Rectangle {
+                    id: overviewPanel
+                    anchors.centerIn: parent
+                    readonly property int wsCount: Hyprland.workspaces.length
+                    width: {
+                        if (wsCount <= 1) return Math.min(parent.width - 80, 560)
+                        if (wsCount <= 4) return Math.min(parent.width - 80, 760)
+                        return Math.min(parent.width - 80, 980)
+                    }
+                    height: {
+                        if (wsCount <= 1) return Math.min(parent.height - 80, 320)
+                        if (wsCount <= 4) return Math.min(parent.height - 80, 520)
+                        return Math.min(parent.height - 80, 720)
+                    }
+                    radius: 12
+                    color: root.bgColor
+                    border.width: 1
+                    border.color: root.borderColor
+
+                    Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    Behavior on height { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                    Rectangle {
+                        id: overviewHeader
+                        anchors { top: parent.top; left: parent.left; right: parent.right }
+                        height: 52
+                        radius: 12
+                        color: root.panelColor
+
+                        Rectangle {
+                            anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
+                            height: 12
+                            color: root.panelColor
+                        }
+
+                        RowLayout {
+                            anchors { fill: parent; leftMargin: 20; rightMargin: 20 }
+                            spacing: 12
+
+                            Text {
+                                color: root.textColor
+                                text: "workspace overview"
+                                font { pixelSize: 14; weight: Font.Medium; family: "monospace" }
+                            }
+
+                            Rectangle { width: 1; height: 16; color: root.borderColor }
+
+                            Text {
+                                color: root.secondaryTextColor
+                                text: Hyprland.workspaces.length + " workspaces  ·  ↑↓ navigate  ·  esc close"
+                                font { pixelSize: 11; family: "monospace" }
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Rectangle {
+                                Layout.preferredWidth: 80
+                                Layout.preferredHeight: 28
+                                radius: 6
+                                color: closeHover.containsMouse ? root.surfaceHoverColor : root.surfaceColor
+                                Behavior on color { ColorAnimation { duration: 100 } }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    color: root.mutedTextColor
+                                    text: "close"
+                                    font { pixelSize: 11; family: "monospace" }
+                                }
+
+                                MouseArea {
+                                    id: closeHover
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.setOverviewOpen(false)
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        id: overviewDivider
+                        anchors { top: overviewHeader.bottom; left: parent.left; right: parent.right }
+                        height: 1
+                        color: root.borderColor
+                    }
+
+                    RowLayout {
+                        anchors {
+                            top: overviewDivider.bottom
+                            left: parent.left
+                            right: parent.right
+                            bottom: parent.bottom
+                        }
+                        spacing: 0
+
+                        Rectangle {
+                            Layout.preferredWidth: 120
+                            Layout.fillHeight: true
+                            color: root.panelColor
+
+                            Rectangle {
+                                anchors { top: parent.top; left: parent.left; bottom: parent.bottom }
+                                width: 12
+                                color: root.panelColor
+                            }
+
+                            ListView {
+                                id: overviewSidebar
+                                anchors {
+                                    fill: parent
+                                    topMargin: 10
+                                    bottomMargin: 10
+                                }
+                                model: Hyprland.workspaces
+                                clip: true
+                                currentIndex: root.overviewIndex
+
+                                onCurrentIndexChanged: {
+                                    if (root.overviewIndex !== currentIndex)
+                                        root.overviewIndex = currentIndex
+                                    positionViewAtIndex(currentIndex, ListView.Contain)
+                                }
+
+                                delegate: Rectangle {
+                                    required property var modelData
+                                    required property int index
+
+                                    width: ListView.view.width
+                                    height: 44
+                                    color: "transparent"
+
+                                    Rectangle {
+                                        anchors {
+                                            fill: parent
+                                            leftMargin: 8
+                                            rightMargin: 8
+                                            topMargin: 2
+                                            bottomMargin: 2
+                                        }
+                                        radius: 7
+                                        color: overviewSidebar.currentIndex === index
+                                            ? root.accentColor
+                                            : sidebarHover.containsMouse
+                                                ? root.surfaceHoverColor
+                                                : "transparent"
+                                        Behavior on color { ColorAnimation { duration: 100 } }
+
+                                        Rectangle {
+                                            visible: modelData.focused && overviewSidebar.currentIndex !== index
+                                            width: 5
+                                            height: 5
+                                            radius: 3
+                                            color: root.accentColor
+                                            anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                                        }
+
+                                        RowLayout {
+                                            anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
+                                            spacing: 6
+
+                                            Rectangle {
+                                                width: 22
+                                                height: 18
+                                                radius: 4
+                                                color: overviewSidebar.currentIndex === index
+                                                    ? Qt.rgba(0, 0, 0, 0.25)
+                                                    : modelData.focused
+                                                        ? root.accentColor
+                                                        : root.surfaceColor
+                                                Behavior on color { ColorAnimation { duration: 100 } }
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: modelData.name
+                                                    color: overviewSidebar.currentIndex === index
+                                                        ? root.accentTextColor
+                                                        : modelData.focused
+                                                            ? root.accentTextColor
+                                                            : root.mutedTextColor
+                                                    font { pixelSize: 10; weight: Font.Bold; family: "monospace" }
+                                                }
+                                            }
+
+                                            Text {
+                                                Layout.fillWidth: true
+                                                color: overviewSidebar.currentIndex === index
+                                                    ? root.accentTextColor
+                                                    : root.mutedTextColor
+                                                text: {
+                                                    const n = root.modelCount(modelData.toplevels)
+                                                    return n === 0 ? "empty" : n + (n === 1 ? " win" : " wins")
+                                                }
+                                                font { pixelSize: 10; family: "monospace" }
+                                                Behavior on color { ColorAnimation { duration: 100 } }
+                                            }
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: sidebarHover
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.overviewIndex = index
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.preferredWidth: 1
+                            Layout.fillHeight: true
+                            color: root.borderColor
+                        }
+
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+
+                            property var selectedWs: overviewSidebar.currentIndex >= 0
+                                && overviewSidebar.currentIndex < Hyprland.workspaces.length
+                                ? Hyprland.workspaces[overviewSidebar.currentIndex]
+                                : null
+                            property var selectedToplevels: selectedWs ? selectedWs.toplevels : null
+
+                            ColumnLayout {
+                                anchors { fill: parent; margins: 16 }
+                                spacing: 12
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+
+                                    Rectangle {
+                                        width: 32
+                                        height: 26
+                                        radius: 6
+                                        color: parent.parent.parent.selectedWs?.focused
+                                            ? root.accentColor
+                                            : root.surfaceColor
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: parent.parent.parent.parent.selectedWs?.name ?? "-"
+                                            color: parent.parent.parent.parent.selectedWs?.focused
+                                                ? root.accentTextColor
+                                                : root.mutedTextColor
+                                            font { pixelSize: 12; weight: Font.Bold; family: "monospace" }
+                                        }
+                                    }
+
+                                    Text {
+                                        color: root.textColor
+                                        text: {
+                                            const ws = parent.parent.parent.selectedWs
+                                            if (!ws) return "—"
+                                            return ws.focused ? "active workspace" : "workspace " + ws.name
+                                        }
+                                        font { pixelSize: 13; weight: Font.Medium; family: "monospace" }
+                                    }
+
+                                    Item { Layout.fillWidth: true }
+
+                                    Rectangle {
+                                        visible: parent.parent.parent.selectedWs != null
+                                            && !parent.parent.parent.selectedWs.focused
+                                        width: 80
+                                        height: 26
+                                        radius: 6
+                                        color: switchBtn.containsMouse ? root.accentColor : root.surfaceColor
+                                        Behavior on color { ColorAnimation { duration: 100 } }
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "switch ->"
+                                            color: switchBtn.containsMouse
+                                                ? root.accentTextColor
+                                                : root.mutedTextColor
+                                            font { pixelSize: 10; family: "monospace" }
+                                        }
+
+                                        MouseArea {
+                                            id: switchBtn
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                parent.parent.parent.parent.parent.selectedWs?.activate()
+                                                root.setOverviewOpen(false)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 1
+                                    color: root.borderColor
+                                }
+
+                                ScrollView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+
+                                    Column {
+                                        width: parent.width
+                                        spacing: 6
+
+                                        Repeater {
+                                            model: parent.parent.parent.selectedToplevels ?? 0
+
+                                            delegate: Rectangle {
+                                                required property var modelData
+                                                required property int index
+
+                                                width: parent ? parent.width : 300
+                                                height: 46
+                                                radius: 8
+                                                color: winHover.containsMouse ? root.surfaceHoverColor : root.surfaceColor
+                                                Behavior on color { ColorAnimation { duration: 80 } }
+
+                                                RowLayout {
+                                                    anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+                                                    spacing: 10
+
+                                                    Rectangle {
+                                                        width: 28
+                                                        height: 28
+                                                        radius: 6
+                                                        color: root.accentColor
+                                                        opacity: 0.85
+
+                                                        Text {
+                                                            anchors.centerIn: parent
+                                                            text: {
+                                                                const t = modelData.appId || modelData.title || "?"
+                                                                return t.charAt(0).toUpperCase()
+                                                            }
+                                                            color: root.accentTextColor
+                                                            font { pixelSize: 12; weight: Font.Bold; family: "monospace" }
+                                                        }
+                                                    }
+
+                                                    Column {
+                                                        Layout.fillWidth: true
+                                                        spacing: 2
+
+                                                        Text {
+                                                            width: parent.width
+                                                            color: root.textColor
+                                                            text: modelData.title || "Untitled"
+                                                            elide: Text.ElideRight
+                                                            font { pixelSize: 12; family: "monospace" }
+                                                        }
+
+                                                        Text {
+                                                            width: parent.width
+                                                            color: root.secondaryTextColor
+                                                            text: modelData.appId || ""
+                                                            elide: Text.ElideRight
+                                                            font { pixelSize: 10; family: "monospace" }
+                                                        }
+                                                    }
+
+                                                    Text {
+                                                        color: root.secondaryTextColor
+                                                        text: "#" + (index + 1)
+                                                        font { pixelSize: 10; family: "monospace" }
+                                                    }
+                                                }
+
+                                                MouseArea {
+                                                    id: winHover
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    cursorShape: Qt.PointingHandCursor
+                                                }
+                                            }
+                                        }
+
+                                        Item {
+                                            visible: parent.parent.parent.selectedWs
+                                                && root.modelCount(parent.parent.parent.selectedToplevels) === 0
+                                            width: parent.width
+                                            height: 80
+
+                                            Column {
+                                                anchors.centerIn: parent
+                                                spacing: 6
+
+                                                Text {
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    color: root.secondaryTextColor
+                                                    text: "- empty workspace -"
+                                                    font { pixelSize: 12; family: "monospace" }
+                                                }
+
+                                                Text {
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    color: root.secondaryTextColor
+                                                    text: "no windows open"
+                                                    font { pixelSize: 10; family: "monospace" }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  런처 팝업
+    // ═══════════════════════════════════════════════════════
+    PopupWindow {
+        visible: root.launcherOpen
+        implicitWidth: 440
+        implicitHeight: 520
+        anchor.window: bar
+        anchor.item: launcherButton
+        anchor.edges: Edges.Bottom
+        anchor.gravity: Edges.Bottom
+        anchor.rect.y: root.popupYOffset
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 10
+            color: root.bgColor
+            border.width: 1
+            border.color: root.borderColor
+
+            ColumnLayout {
+                anchors { fill: parent; margins: 12 }
+                spacing: 10
+
+                // 검색창
+                TextField {
+                    id: launcherField
+                    Layout.fillWidth: true
+                    placeholderText: "> search applications..."
+                    color: root.textColor
+                    selectedTextColor: root.accentTextColor
+                    selectionColor: root.accentColor
+                    leftPadding: 12
+                    rightPadding: 12
+                    font { pixelSize: 13; family: "monospace" }
+
+                    onVisibleChanged: {
+                        if (!visible) return
+                        clear()
+                        forceActiveFocus()
+                    }
+
+                    Keys.onEscapePressed: root.launcherOpen = false
+                    Keys.onReturnPressed: root.launchFirst()
+
+                    background: Rectangle {
+                        radius: 7
+                        color: root.panelColor
+                        border.width: 1
+                        border.color: launcherField.activeFocus
+                            ? root.accentColor
+                            : root.inputBorderColor
+                        Behavior on border.color { ColorAnimation { duration: 120 } }
+                    }
+                }
+
+                // 구분선
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: root.borderColor
+                }
+
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+
+                    ListView {
+                        id: launcherList
+                        model: DesktopEntries.applications
+                        clip: true
+                        spacing: 0
+
+                        delegate: Item {
+                            required property var modelData
+
+                            property bool appVisible: root.matchesQuery(
+                                modelData, launcherField.text)
+
+                            width: ListView.view ? ListView.view.width : 416
+                            height: appVisible ? 56 : 0
+                            visible: appVisible
+                            clip: true
+
+                            Rectangle {
+                                anchors {
+                                    fill: parent
+                                    bottomMargin: 4
+                                }
+                                radius: 7
+                                color: appMouse.containsMouse
+                                    ? root.surfaceColor
+                                    : "transparent"
+                                visible: parent.appVisible
+
+                                Behavior on color { ColorAnimation { duration: 80 } }
+
+                                // 호버 시 좌측 액센트 바
+                                Rectangle {
+                                    width: 2; height: 22; radius: 1
+                                    color: root.accentColor
+                                    opacity: appMouse.containsMouse ? 1 : 0
+                                    anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                                    Behavior on opacity { NumberAnimation { duration: 80 } }
+                                }
+
+                                Column {
+                                    anchors {
+                                        left: parent.left; right: parent.right
+                                        verticalCenter: parent.verticalCenter
+                                        leftMargin: 18; rightMargin: 12
+                                    }
+                                    spacing: 2
+
+                                    Text {
+                                        color: root.textColor
+                                        text: modelData.name || modelData.id
+                                        font { pixelSize: 13; weight: Font.Medium; family: "monospace" }
+                                        elide: Text.ElideRight
+                                        width: parent.width
+                                    }
+
+                                    Text {
+                                        color: root.secondaryTextColor
+                                        text: modelData.comment
+                                            || modelData.genericName
+                                            || modelData.id
+                                        font { pixelSize: 11; family: "monospace" }
+                                        elide: Text.ElideRight
+                                        width: parent.width
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: appMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.launchEntry(modelData)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  볼륨 팝업
+    // ═══════════════════════════════════════════════════════
+    PopupWindow {
+        visible: root.volumeOpen
+        implicitWidth: 300
+        implicitHeight: 156
+        anchor.window: bar
+        anchor.item: volumeButton
+        anchor.edges: Edges.Bottom
+        anchor.gravity: Edges.Bottom
+        anchor.rect.y: root.popupYOffset
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 10
+            color: root.bgColor
+            border.width: 1
+            border.color: root.borderColor
+
+            ColumnLayout {
+                anchors { fill: parent; margins: 14 }
+                spacing: 10
+
+                // 싱크 이름
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    Rectangle {
+                        width: 6; height: 6; radius: 3
+                        color: root.sinkReady ? root.successColor : root.secondaryTextColor
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        color: root.mutedTextColor
+                        text: root.sinkReady
+                            ? (Pipewire.defaultAudioSink.description
+                                || Pipewire.defaultAudioSink.nickname
+                                || Pipewire.defaultAudioSink.name)
+                            : "no audio sink"
+                        font { pixelSize: 11; family: "monospace" }
+                        elide: Text.ElideRight
+                    }
+                }
+
+                // 구분선
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: root.borderColor
+                }
+
+                // 슬라이더
+                Item {
+                    id: volumeSlider
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 20
+                    enabled: root.sinkReady
+                    opacity: root.isMuted ? 0.35 : 1.0
+
+                    function syncFromSink() {
+                    }
+
+                    function updateFromX(xPos) {
+                        if (!root.sinkReady || track.width <= 0)
+                            return
+
+                        const ratio = Math.max(0, Math.min(1, xPos / track.width))
+                        root.setSinkVolume(ratio)
+                    }
+
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                    Rectangle {
+                        id: track
+                        anchors {
+                            left: parent.left
+                            right: parent.right
+                            verticalCenter: parent.verticalCenter
+                        }
+                        height: 4
+                        radius: 2
+                        color: root.surfaceColor
+
+                        Rectangle {
+                            anchors {
+                                left: parent.left
+                                top: parent.top
+                                bottom: parent.bottom
+                            }
+                            width: root.currentVolume * parent.width
+                            radius: 2
+                            color: root.isMuted ? root.secondaryTextColor : root.accentColor
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 14
+                        height: 14
+                        radius: 7
+                        x: (track.width - width) * root.currentVolume
+                        y: parent.height / 2 - height / 2
+                        color: root.accentColor
+                        border.width: 2
+                        border.color: root.bgColor
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: root.sinkReady
+                        cursorShape: Qt.PointingHandCursor
+                        onPressed: (mouse) => volumeSlider.updateFromX(mouse.x)
+                        onPositionChanged: (mouse) => {
+                            if (pressed)
+                                volumeSlider.updateFromX(mouse.x)
+                        }
+                    }
+                }
+
+                // 볼륨 % + 음소거 버튼
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    Text {
+                        color: root.isMuted ? root.accentColor : root.mutedTextColor
+                        text: root.isMuted ? "muted" : root.volumePercentText()
+                        font { pixelSize: 12; family: "monospace" }
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    Rectangle {
+                        width: 64; height: 24; radius: 6
+                        color: root.isMuted ? root.accentColor : root.surfaceColor
+
+                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: root.isMuted ? "unmute" : "mute"
+                            color: root.isMuted ? root.accentTextColor : root.mutedTextColor
+                            font { pixelSize: 11; family: "monospace" }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.toggleMute()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
