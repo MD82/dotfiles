@@ -12,21 +12,21 @@ nic() {
 
   # 새 세션 생성 (detached), 첫 창 이름: editor
   # pane 0: nvim (좌상), pane 1: terminal (좌하), pane 2: claude (우)
-  tmux new-session -d -s "$session_name" -n editor -c "$dir"
+  tmux new-session -d -s "$session_name" -n "editor" -c "$dir"
 
   # pane 0 기준으로 오른쪽 30% 분할 → pane 1 (claude)
-  tmux split-window -h -l 30% -t "$session_name:editor.0" -c "$dir"
+  tmux split-window -h -p 30 -t "${session_name}:editor" -c "$dir"
 
   # pane 0 (왼쪽) 하단 20% 분할 → pane 1 (terminal), 기존 pane 1은 2로 밀림
-  tmux split-window -v -l 20% -t "$session_name:editor.0" -c "$dir"
+  tmux split-window -v -p 20 -t "${session_name}:editor.0" -c "$dir"
 
   # 각 패널에 명령 전송
   # pane 0: nvim, pane 1: terminal(빈 쉘), pane 2: claude
-  tmux send-keys -t "$session_name:editor.0" "nvim ." Enter
-  tmux send-keys -t "$session_name:editor.2" "claude" Enter
+  tmux send-keys -t "${session_name}:editor.0" "nvim ." Enter
+  tmux send-keys -t "${session_name}:editor.2" "claude" Enter
 
   # neovim 패널(pane 0)에 포커스
-  tmux select-pane -t "$session_name:editor.0"
+  tmux select-pane -t "${session_name}:editor.0"
 
   tmux attach-session -t "$session_name"
 }
