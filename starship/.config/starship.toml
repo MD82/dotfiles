@@ -33,17 +33,18 @@ format = "[on ]($style)[$symbol$branch]($style)"
 style = "#bb9af7"
 
 [git_status]
-format = '([ \[$all_status$ahead_behind\]]($style)) '
+format = '([ \[$staged$modified$deleted$untracked$stashed$conflicted$renamed$ahead_behind\]]($style)) '
 style = "#f7768e"
-conflicted = "⚡"
+conflicted = "⚡${count}"
 ahead = "↑${count}"
 behind = "↓${count}"
 diverged = "↕"
-untracked = "?"
-stashed = "≡"
+untracked = "?${count}"
+stashed = "≡${count}"
 modified = "±${count}"
-staged = "+${count}"
+staged = "⋯${count}"
 deleted = "✘${count}"
+renamed = "»${count}"
 
 # ── Python (venv 포함, .py 파일 있을 때만) ────────────
 [python]

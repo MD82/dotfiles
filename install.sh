@@ -40,15 +40,8 @@ link "$DOTFILES/nvim/.config/nvim"           "$HOME/.config/nvim"
 link "$DOTFILES/starship/.config/starship.toml" "$HOME/.config/starship.toml"
 link "$DOTFILES/git/.config/git/ignore"      "$HOME/.config/git/ignore"
 
-# Shell별
-case "$OS" in
-  wsl|arch)
-    link "$DOTFILES/shell/.bash_aliases" "$HOME/.bash_aliases"
-    ;;
-  macos|cachyos)
-    link "$DOTFILES/shell/.bash_aliases" "$HOME/.bash_aliases"
-    ;;
-esac
+# Shell
+link "$DOTFILES/shell/.bash_aliases" "$HOME/.bash_aliases"
 
 # Hyprland (CachyOS / Arch)
 if [ "$OS" = "cachyos" ] || [ "$OS" = "arch" ]; then

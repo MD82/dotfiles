@@ -61,8 +61,9 @@ return {
 
       -- Java 전용 단축키
       vim.api.nvim_create_autocmd("LspAttach", {
-        pattern = "*.java",
         callback = function(ev)
+          local client = vim.lsp.get_client_by_id(ev.data and ev.data.client_id)
+          if not client or client.name ~= "jdtls" then return end
           local map = function(keys, func, desc)
             vim.keymap.set("n", keys, func, { buffer = ev.buf, desc = desc })
           end

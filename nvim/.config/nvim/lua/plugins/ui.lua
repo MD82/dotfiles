@@ -14,6 +14,16 @@ return {
     "nvim-lualine/lualine.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     config = function()
+      local function file_label()
+        if vim.bo.filetype == "toggleterm" then
+          local term_id = vim.b.toggle_number or string.match(vim.api.nvim_buf_get_name(0), "#toggleterm#(%d+)")
+          return term_id and ("Terminal " .. term_id) or "Terminal"
+        end
+
+        local name = vim.fn.expand("%:t")
+        return name ~= "" and name or "[No Name]"
+      end
+
       require("lualine").setup({
         options = {
           theme = "catppuccin-nvim",
@@ -23,7 +33,7 @@ return {
         sections = {
           lualine_a = { "mode" },
           lualine_b = { "branch", "diff", "diagnostics" },
-          lualine_c = { "filename" },
+          lualine_c = { file_label },
           lualine_x = {
             "encoding",
             { "fileformat", symbols = { unix = "unix", dos = "dos", mac = "mac" } },
@@ -45,7 +55,8 @@ return {
       wk.add({
         { "<leader>w", desc = "Save" },
         { "<leader>q", desc = "Quit" },
-        { "<leader>e", desc = "File tree" },
+        { "<leader>e", desc = "Root explorer" },
+        { "<leader>E", desc = "File explorer" },
         { "<leader>t", desc = "Terminal" },
         { "<leader>f",  desc = "Format" },
         { "<leader>ff", desc = "Find files" },

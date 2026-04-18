@@ -24,6 +24,18 @@ opt.termguicolors = true
 opt.signcolumn = "yes"
 opt.cursorline = true
 opt.scrolloff = 8
+opt.guicursor = "n-v-c:block,i-ci-ve:block,r-cr:block,o:block"
+
+vim.api.nvim_create_autocmd("ColorScheme", {
+  pattern = "*",
+  callback = function()
+    vim.api.nvim_set_hl(0, "Cursor", { fg = "#1e1e2e", bg = "#a6e3a1" })
+    vim.api.nvim_set_hl(0, "lCursor", { fg = "#1e1e2e", bg = "#a6e3a1" })
+  end,
+})
+
+vim.api.nvim_set_hl(0, "Cursor", { fg = "#1e1e2e", bg = "#a6e3a1" })
+vim.api.nvim_set_hl(0, "lCursor", { fg = "#1e1e2e", bg = "#a6e3a1" })
 
 -- 파일
 opt.encoding = "utf-8"

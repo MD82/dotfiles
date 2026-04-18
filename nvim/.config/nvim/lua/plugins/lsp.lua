@@ -11,7 +11,7 @@ return {
     dependencies = { "mason-org/mason.nvim", "neovim/nvim-lspconfig" },
     opts = {
       ensure_installed = { "lua_ls" },  -- jdtls는 nvim-jdtls가 직접 관리
-      automatic_enable = true,
+      automatic_enable = { exclude = { "jdtls" } },
     },
   },
 
@@ -76,7 +76,7 @@ return {
             vim.keymap.set("n", keys, func, { buffer = ev.buf, desc = desc })
           end
           map("gd",         vim.lsp.buf.definition,      "Go to definition")
-          map("gr",         vim.lsp.buf.references,      "References")
+          map("gr",         function() require("telescope.builtin").lsp_references() end, "References")
           map("K",          vim.lsp.buf.hover,           "Hover docs")
           map("<leader>rn", vim.lsp.buf.rename,          "Rename")
           map("<leader>ca", vim.lsp.buf.code_action,     "Code action")
