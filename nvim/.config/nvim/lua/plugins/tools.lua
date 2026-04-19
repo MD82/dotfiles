@@ -19,11 +19,7 @@ local exclude_globs = {
 }
 
 local function build_find_command()
-  local find_command = { "rg", "--files" }
-  vim.list_extend(find_command, vim.tbl_map(function(glob)
-    return "--glob=" .. glob
-  end, exclude_globs))
-  return find_command
+  return { "rg", "--files", "--glob", "!.git/*", "--glob", "!node_modules/**" }
 end
 
 return {
@@ -161,7 +157,6 @@ return {
             cwd = search_dir,
             prompt_title = "Find Files (Mini Files Dir)",
             results_title = search_dir,
-            find_command = build_find_command(),
           })
         end)
       end
@@ -222,6 +217,19 @@ return {
         callback = function(args)
           if args.match == "MiniFilesExplorerOpen" then
             mini_files.set_bookmark("h", "~", { desc = "Home" })
+
+            local uname = vim.uv.os_uname()
+            local is_mac = uname.sysname == "Darwin"
+            local is_wsl = string.find(uname.release, "WSL") ~= nil
+
+            if is_mac then
+              local projects_path = os.getenv("HOME") .. "/Projects"
+              if vim.uv.fs_stat(projects_path) then
+                mini_files.set_bookmark("p", projects_path, { desc = "Projects" })
+              end
+            elseif is_wsl then
+              mini_files.set_bookmark("p", "~/gitRepository_wsl", { desc = "Projects" })
+            end
           end
           refresh_mini_files_focus_marker()
         end,
@@ -291,7 +299,6 @@ return {
           require("telescope.builtin").find_files({
             prompt_title = "Find Files (Fuzzy)",
             results_title = "Path / File Name",
-            find_command = build_find_command(),
           })
         end,
         desc = "Find files (fuzzy)",
