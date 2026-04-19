@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Function to get brightness level
+get_backlight() {
+    if [ "$1" == "kbd" ]; then
+        brightnessctl --device='smc::kbd_backlight' info | grep -oP '\(\K[0-9]+(?=%\))'
+    else
+        brightnessctl info | grep -oP '\(\K[0-9]+(?=%\))'
+    fi
+}
+
+# Adjust brightness
+case $1 in
+    mon_up)
+        brightnessctl -e4 -n2 set 5%+
+        icon="brightness-high"
+        label="Brightness"
+        tag="backlight"
+        ;;
+    mon_down)
+        brightnessctl -e4 -n0 set 5%-
+        icon="brightness-low"
+        label="Brightness"
+        tag="backlight"
+        ;;
+    kbd_up)
+        brightnessctl --device='smc::kbd_backlight' set +10%
+        icon="keyboard-brightness"
+        label="Keyboard Backlight"
+        tag="kbd-backlight"
+        ;;
+    kbd_down)
+        brightnessctl --device='smc::kbd_backlight' set 10%-
+        icon="keyboard-brightness"
+        label="Keyboard Backlight"
+        tag="kbd-backlight"
+        ;;
+esac
+
+# Get level and notify
+if [ "$1" == "kbd_up" ] || [ "$1" == "kbd_down" ]; then
+    level=$(get_backlight "kbd")
+else
+    level=$(get_backlight)
+fi
+
+dunstify -a "$label" -u low -i "$icon" -h int:value:"$level" -h string:x-dunst-stack-tag:"$tag" "$label: ${level}%"

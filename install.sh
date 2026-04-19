@@ -34,6 +34,18 @@ link() {
   echo "  Linked: $dst"
 }
 
+link_dir() {
+  local src="$1"
+  local dst="$2"
+  mkdir -p "$(dirname "$dst")"
+  if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+    echo "  Backing up $dst → $dst.bak"
+    mv "$dst" "$dst.bak"
+  fi
+  ln -sfn "$src" "$dst"
+  echo "  Linked: $dst -> $src"
+}
+
 # 공통
 link "$DOTFILES/tmux/.tmux.conf"             "$HOME/.tmux.conf"
 link "$DOTFILES/nvim/.config/nvim"           "$HOME/.config/nvim"
@@ -47,6 +59,8 @@ link "$DOTFILES/shell/.bash_aliases" "$HOME/.bash_aliases"
 if [ "$OS" = "cachyos" ] || [ "$OS" = "arch" ]; then
   if [ -d "$DOTFILES/hyprland/.config/hypr" ]; then
     link "$DOTFILES/hyprland/.config/hypr" "$HOME/.config/hypr"
+    mkdir -p "$HOME/.config/hypr/conf"
+    link_dir "$DOTFILES/hyprland/.config/hypr/conf/$OS" "$HOME/.config/hypr/conf/current"
   fi
 fi
 

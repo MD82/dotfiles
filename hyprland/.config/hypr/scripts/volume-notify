@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Function to get volume
+get_volume() {
+    wpctl get-volume @DEFAULT_AUDIO_SINK@
+}
+
+# Adjust volume
+case $1 in
+    up)
+        wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+
+        ;;
+    down)
+        wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+        ;;
+    mute)
+        wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+        ;;
+esac
+
+# Get volume level info
+volume_info=$(get_volume)
+volume=$(echo "$volume_info" | awk '{print int($2 * 100)}')
+is_muted=$(echo "$volume_info" | grep -q "[MUTED]" && echo "yes" || echo "no")
+
+# Notification
+if [ "$is_muted" == "yes" ]; then
+    dunstify -a "Volume" -u low -i audio-volume-muted -h string:x-dunst-stack-tag:volume "Muted"
+else
+    # Choose icon based on volume level
+    if [ "$volume" -eq 0 ]; then
+        icon="audio-volume-muted"
+    elif [ "$volume" -lt 33 ]; then
+        icon="audio-volume-low"
+    elif [ "$volume" -lt 66 ]; then
+        icon="audio-volume-medium"
+    else
+        icon="audio-volume-high"
+    fi
+    dunstify -a "Volume" -u low -i "$icon" -h int:value:"$volume" -h string:x-dunst-stack-tag:volume "Volume: ${volume}%"
+fi

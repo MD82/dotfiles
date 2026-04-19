@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+BATTERY_PATH="/sys/class/power_supply/BAT0"
+
+while true; do
+    if [ -r "$BATTERY_PATH/capacity" ] && [ -r "$BATTERY_PATH/status" ]; then
+        capacity=$(cat "$BATTERY_PATH/capacity")
+        status=$(cat "$BATTERY_PATH/status")
+
+        if [ "$status" = "Discharging" ] && [ "$capacity" -le 10 ]; then
+            systemctl suspend
+        fi
+    fi
+
+    sleep 60
+done
