@@ -30,7 +30,8 @@ link() {
     echo "  Backing up $dst → $dst.bak"
     mv "$dst" "$dst.bak"
   fi
-  ln -sf "$src" "$dst"
+  # Replace the symlink itself even when dst is a symlink to a directory.
+  ln -sfnT "$src" "$dst"
   echo "  Linked: $dst"
 }
 
@@ -42,7 +43,7 @@ link_dir() {
     echo "  Backing up $dst → $dst.bak"
     mv "$dst" "$dst.bak"
   fi
-  ln -sfn "$src" "$dst"
+  ln -sfnT "$src" "$dst"
   echo "  Linked: $dst -> $src"
 }
 

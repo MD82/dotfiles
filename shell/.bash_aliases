@@ -1,5 +1,29 @@
 # nic: Neovim + AI + Terminal (tmux 자동 레이아웃)
 # 사용법: nic [dir] [claude|codex|gemini]  (AI 생략 시 빈 pane)
+tmux() {
+  command tmux "$@"
+  local status=$?
+
+  # tmux client 종료 후 부모 셸의 화면 크기와 커서 줄을 정리한다.
+  case "${1-}" in
+    ""|attach|attach-session|a|new|new-session)
+      if [[ $- == *i* ]] && [ -t 1 ]; then
+        stty sane opost onlcr 2>/dev/null || true
+        local winsize
+        winsize=$(stty size 2>/dev/null) || winsize=
+        if [ -n "$winsize" ]; then
+          LINES=${winsize% *}
+          COLUMNS=${winsize#* }
+          export LINES COLUMNS
+        fi
+        printf '\r\n'
+      fi
+      ;;
+  esac
+
+  return "$status"
+}
+
 nic() {
   local dir="${1:-.}"
   local ai="${2:-}"
