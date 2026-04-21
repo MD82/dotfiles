@@ -372,8 +372,48 @@ return {
   },
 
   -- Git
-  { "lewis6991/gitsigns.nvim", config = true },
-  { "tpope/vim-fugitive" },
+  {
+    "lewis6991/gitsigns.nvim",
+    config = function()
+      require("gitsigns").setup({
+        signs = {
+          add          = { text = "│" },
+          change       = { text = "┆" },
+          delete       = { text = "▁" },
+          topdelete    = { text = "▔" },
+          changedelete = { text = "~" },
+        },
+        current_line_blame = true,
+        on_attach = function(bufnr)
+          local gs = package.loaded.gitsigns
+
+          local function map(mode, l, r)
+            vim.keymap.set(mode, l, r, { buffer = bufnr })
+          end
+
+          -- 이동
+          map("n", "]c", gs.next_hunk)
+          map("n", "[c", gs.prev_hunk)
+
+          -- 핵심 기능
+          map("n", "<leader>hs", gs.stage_hunk)
+          map("n", "<leader>hr", gs.reset_hunk)
+          map("n", "<leader>hp", gs.preview_hunk)
+
+          -- 블레임
+          map("n", "<leader>hb", gs.toggle_current_line_blame)
+        end,
+      })
+    end,
+  },
+  {
+    "tpope/vim-fugitive",
+    keys = {
+      { "<leader>gs", "<cmd>Git<CR>",         desc = "Git status" },
+      { "<leader>gc", "<cmd>Git commit<CR>",  desc = "Git commit" },
+      { "<leader>gd", "<cmd>Gdiffsplit<CR>",  desc = "Git diff split" },
+    },
+  },
 
   -- 괄호 자동 닫기
   {
@@ -403,6 +443,20 @@ return {
         end,
         desc = "Terminal",
       },
+      -- {
+      --   "<leader>ai",
+      --   function()
+      --     require("toggleterm.terminal").Terminal:new({
+      --       cmd = "uvx --from aider-chat aider --model openai/Gemma-4-31B-it",
+      --       direction = "float",
+      --       float_opts = { border = "rounded" },
+      --       on_open = function(term)
+      --         vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { buffer = term.bufnr })
+      --       end,
+      --     }):toggle()
+      --   end,
+      --   desc = "Aider AI",
+      -- },
     },
     config = function()
       local toggleterm = require("toggleterm")
