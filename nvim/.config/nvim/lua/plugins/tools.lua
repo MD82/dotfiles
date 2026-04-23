@@ -52,7 +52,7 @@ return {
             local full_path = vim.fn.fnamemodify(buf_name, ":p")
             local fs_type = vim.uv.fs_stat(full_path and full_path ~= "" and full_path or "")
             if fs_type then
-              path = fs_type.type == "directory" and full_path or vim.fn.fnamemodify(full_path, ":h")
+              path = fs_type.type == "directory" and full_path or full_path
             end
           end
 
