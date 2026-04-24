@@ -217,19 +217,6 @@ return {
         callback = function(args)
           if args.match == "MiniFilesExplorerOpen" then
             mini_files.set_bookmark("h", "~", { desc = "Home" })
-
-            local uname = vim.uv.os_uname()
-            local is_mac = uname.sysname == "Darwin"
-            local is_wsl = string.find(uname.release, "WSL") ~= nil
-
-            if is_mac then
-              local projects_path = os.getenv("HOME") .. "/Projects"
-              if vim.uv.fs_stat(projects_path) then
-                mini_files.set_bookmark("p", projects_path, { desc = "Projects" })
-              end
-            elseif is_wsl then
-              mini_files.set_bookmark("p", "~/gitRepository_wsl", { desc = "Projects" })
-            end
           end
           refresh_mini_files_focus_marker()
         end,
