@@ -1,11 +1,13 @@
 return {
   -- 테마
   {
-    "catppuccin/nvim",
-    name = "catppuccin",
+    "maxmx03/solarized.nvim",
+    lazy = false,
     priority = 1000,
     config = function()
-      vim.cmd.colorscheme("catppuccin-mocha")
+      require("solarized").setup({ theme = "neo" })
+      vim.o.background = "light"
+      vim.cmd.colorscheme("solarized")
     end,
   },
 
@@ -26,7 +28,7 @@ return {
 
       require("lualine").setup({
         options = {
-          theme = "catppuccin-nvim",
+          theme = "solarized_light",
           component_separators = { left = "|", right = "|" },
           section_separators = { left = "", right = "" },
         },
