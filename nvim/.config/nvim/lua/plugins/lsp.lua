@@ -83,7 +83,7 @@ return {
           map("K",          vim.lsp.buf.hover,           "Hover docs")
           map("<leader>rn", vim.lsp.buf.rename,          "Rename")
           map("<leader>ca", vim.lsp.buf.code_action,     "Code action")
-          map("<leader>f",  function() vim.lsp.buf.format({ async = true }) end, "Format")
+          map("<leader>lf", function() vim.lsp.buf.format({ async = true }) end, "LSP Format")
           map("[d",         vim.diagnostic.goto_prev,    "Prev diagnostic")
           map("]d",         vim.diagnostic.goto_next,    "Next diagnostic")
         end,

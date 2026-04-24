@@ -26,3 +26,6 @@ map("v", "<A-k>", ":m '<-2<cr>gv=gv",  { desc = "Move line up" })
 
 -- ESC 대체
 map("i", "jk", "<ESC>", { desc = "Escape insert mode" })
+
+-- 터미널 모드에서 편집창으로 이동
+map("t", "<C-w>k", [[<C-\><C-n><C-w>k]], { desc = "Terminal → upper window" })

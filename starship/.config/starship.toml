@@ -1,5 +1,5 @@
 add_newline = false
-scan_timeout = 500
+scan_timeout = 100
 format = """
 $username$hostname$directory$git_branch$git_status$python$nodejs$java$status
 $character"""

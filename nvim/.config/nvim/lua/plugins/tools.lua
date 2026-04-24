@@ -1,5 +1,4 @@
 local exclude_globs = {
-  "!.git/*",
   "!node_modules/**",
   "!dist/**",
   "!build/**",
@@ -223,7 +222,6 @@ return {
         callback = function(args)
           if args.match == "MiniFilesExplorerOpen" then
             mini_files.set_bookmark("h", "~", { desc = "Home" })
-            mini_files.set_bookmark("p", "~/gitRepository_wsl", { desc = "Projects" })
           end
           refresh_mini_files_focus_marker()
         end,
@@ -443,20 +441,6 @@ return {
         end,
         desc = "Terminal",
       },
-      -- {
-      --   "<leader>ai",
-      --   function()
-      --     require("toggleterm.terminal").Terminal:new({
-      --       cmd = "uvx --from aider-chat aider --model openai/Gemma-4-31B-it",
-      --       direction = "float",
-      --       float_opts = { border = "rounded" },
-      --       on_open = function(term)
-      --         vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { buffer = term.bufnr })
-      --       end,
-      --     }):toggle()
-      --   end,
-      --   desc = "Aider AI",
-      -- },
     },
     config = function()
       local toggleterm = require("toggleterm")

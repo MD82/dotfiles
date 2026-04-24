@@ -27,41 +27,34 @@ link() {
   local dst="$2"
   mkdir -p "$(dirname "$dst")"
   if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-    echo "  Backing up $dst → $dst.bak"
-    mv "$dst" "$dst.bak"
+    local bak="$dst.bak"
+    local n=1
+    while [ -e "$bak" ]; do
+      bak="$dst.bak.$n"
+      n=$((n + 1))
+    done
+    echo "  Backing up $dst → $bak"
+    mv "$dst" "$bak"
   fi
   # Replace the symlink itself even when dst is a symlink to a directory.
   ln -sfnT "$src" "$dst"
   echo "  Linked: $dst"
 }
 
-link_dir() {
-  local src="$1"
-  local dst="$2"
-  mkdir -p "$(dirname "$dst")"
-  if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-    echo "  Backing up $dst → $dst.bak"
-    mv "$dst" "$dst.bak"
-  fi
-  ln -sfnT "$src" "$dst"
-  echo "  Linked: $dst -> $src"
-}
 
 # 공통
 link "$DOTFILES/tmux/.tmux.conf"             "$HOME/.tmux.conf"
 link "$DOTFILES/nvim/.config/nvim"           "$HOME/.config/nvim"
 link "$DOTFILES/starship/.config/starship.toml" "$HOME/.config/starship.toml"
-link "$DOTFILES/git/.config/git/ignore"      "$HOME/.config/git/ignore"
-
-# Shell
-link "$DOTFILES/shell/.bash_aliases" "$HOME/.bash_aliases"
+[ -f "$DOTFILES/git/.config/git/ignore" ] && link "$DOTFILES/git/.config/git/ignore" "$HOME/.config/git/ignore" \
+  || echo "  Skipped: git/ignore not found (create $DOTFILES/git/.config/git/ignore to enable)"
 
 # Hyprland (CachyOS / Arch)
 if [ "$OS" = "cachyos" ] || [ "$OS" = "arch" ]; then
   if [ -d "$DOTFILES/hyprland/.config/hypr" ]; then
     link "$DOTFILES/hyprland/.config/hypr" "$HOME/.config/hypr"
     mkdir -p "$HOME/.config/hypr/conf"
-    link_dir "$DOTFILES/hyprland/.config/hypr/conf/$OS" "$HOME/.config/hypr/conf/current"
+    link "$DOTFILES/hyprland/.config/hypr/conf/$OS" "$HOME/.config/hypr/conf/current"
   fi
 fi
 
