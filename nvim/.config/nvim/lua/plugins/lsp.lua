@@ -79,7 +79,7 @@ return {
             vim.keymap.set("n", keys, func, { buffer = ev.buf, desc = desc })
           end
           map("gd",         vim.lsp.buf.definition,      "Go to definition")
-          map("gr",         function() require("telescope.builtin").lsp_references() end, "References")
+          map("gr",         vim.lsp.buf.references,       "References")
           map("K",          vim.lsp.buf.hover,           "Hover docs")
           map("<leader>rn", vim.lsp.buf.rename,          "Rename")
           map("<leader>ca", vim.lsp.buf.code_action,     "Code action")

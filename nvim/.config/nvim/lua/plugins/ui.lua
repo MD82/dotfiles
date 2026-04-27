@@ -14,19 +14,16 @@ return {
   -- 상태바
   {
     "nvim-lualine/lualine.nvim",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
-    config = function()
-      local function file_label()
-        if vim.bo.filetype == "toggleterm" then
-          local term_id = vim.b.toggle_number or string.match(vim.api.nvim_buf_get_name(0), "#toggleterm#(%d+)")
-          return term_id and ("Terminal " .. term_id) or "Terminal"
+      dependencies = { "nvim-tree/nvim-web-devicons" },
+      config = function()
+        local function file_label()
+          if vim.bo.buftype == "terminal" then return "Terminal" end
+
+          local name = vim.fn.expand("%:t")
+          return name ~= "" and name or "[No Name]"
         end
 
-        local name = vim.fn.expand("%:t")
-        return name ~= "" and name or "[No Name]"
-      end
-
-      require("lualine").setup({
+        require("lualine").setup({
         options = {
           theme = "solarized_light",
           component_separators = { left = "|", right = "|" },
