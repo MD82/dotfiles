@@ -49,6 +49,13 @@ link "$DOTFILES/starship/.config/starship.toml" "$HOME/.config/starship.toml"
 [ -f "$DOTFILES/git/.config/git/ignore" ] && link "$DOTFILES/git/.config/git/ignore" "$HOME/.config/git/ignore" \
   || echo "  Skipped: git/ignore not found (create $DOTFILES/git/.config/git/ignore to enable)"
 
+# Ghostty (macOS만)
+if [ "$OS" = "macos" ]; then
+  if [ -d "$DOTFILES/ghostty/.config/ghostty" ]; then
+    link "$DOTFILES/ghostty/.config/ghostty" "$HOME/.config/ghostty"
+  fi
+fi
+
 # Hyprland (CachyOS / Arch)
 if [ "$OS" = "cachyos" ] || [ "$OS" = "arch" ]; then
   if [ -d "$DOTFILES/hyprland/.config/hypr" ]; then
