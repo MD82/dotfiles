@@ -48,6 +48,10 @@ link "$DOTFILES/nvim/.config/nvim"           "$HOME/.config/nvim"
 link "$DOTFILES/starship/.config/starship.toml" "$HOME/.config/starship.toml"
 [ -f "$DOTFILES/git/.config/git/ignore" ] && link "$DOTFILES/git/.config/git/ignore" "$HOME/.config/git/ignore" \
   || echo "  Skipped: git/ignore not found (create $DOTFILES/git/.config/git/ignore to enable)"
+link "$DOTFILES/starship/.config/starship-tty.toml" "$HOME/.config/starship-tty.toml"
+
+# Shell
+link "$DOTFILES/shell/.starship-init.sh" "$HOME/.starship-init.sh"
 
 # Hyprland (CachyOS / Arch)
 if [ "$OS" = "cachyos" ] || [ "$OS" = "arch" ]; then

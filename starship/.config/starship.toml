@@ -1,7 +1,7 @@
 add_newline = false
 scan_timeout = 100
 format = """
-$username$hostname$directory$git_branch$git_status$python$nodejs$java$status
+$username$hostname$directory$git_branch$git_status$nodejs$java$status
 $character"""
 
 # ── 사용자 / 호스트 ───────────────────────────────────
@@ -12,7 +12,7 @@ style_user = "bold #7aa2f7"
 style_root = "bold red"
 
 [hostname]
-ssh_only = false         # 로컬 WSL 세션에서도 표시
+ssh_only = true
 format = "[@$hostname]($style) "
 style = "#9ece6a"
 trim_at = "."
@@ -21,7 +21,7 @@ trim_at = "."
 [directory]
 truncation_length = 3
 truncate_to_repo = false
-format = "[in ]($style)[$path]($style)[$read_only]($read_only_style) "
+format = "[ in ]($style)[$path]($style)[$read_only]($read_only_style) "
 style = "bold #e0af68"
 read_only = " 󰌾"
 read_only_style = "#f7768e"
@@ -46,12 +46,13 @@ staged = "⋯${count}"
 deleted = "✘${count}"
 renamed = "»${count}"
 
-# ── Python (venv 포함, .py 파일 있을 때만) ────────────
-[python]
-symbol = " "
-format = '[${symbol}${pyenv_prefix}${version}(\($virtualenv\))]($style) '
-style = "#e0af68"
-detect_files = ["requirements.txt", "pyproject.toml", ".python-version"]
+# ── Python ────────────────────────────────────────────
+# [python]
+# disabled = true
+# symbol = " "
+# format = '[${symbol}${pyenv_prefix}${version}(\($virtualenv\))]($style) '
+# style = "#e0af68"
+# detect_files = ["requirements.txt", "pyproject.toml", ".python-version", "*.py"]
 
 # ── Node.js / TypeScript ──────────────────────────────
 [nodejs]
@@ -74,7 +75,12 @@ detect_files = ["pom.xml", "build.gradle"]
 # ── 실행 결과 / 커서 ──────────────────────────────────
 [status]
 disabled = false
-format = "[✘ $status]($style) "
+format = "[$symbol$status]($style) "
+map_symbol = true
+not_found_symbol = "nf "
+not_executable_symbol = "noexec "
+sigint_symbol = "^C "
+symbol = "✘ "
 style = "bold #f7768e"
 
 [character]

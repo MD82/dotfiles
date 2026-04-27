@@ -1,0 +1,75 @@
+add_newline = false
+format = """
+$username$hostname$directory$git_branch$git_status$nodejs$java$status
+$character"""
+
+[username]
+show_always = true
+format = "[$user]($style)[ in ](dimmed white)"
+style_user = "bold blue"
+style_root = "bold red"
+
+[hostname]
+ssh_only = true
+format = "[@$hostname]($style) "
+style = "green"
+trim_at = "."
+
+[directory]
+truncation_length = 3
+truncate_to_repo = false
+format = "[$path]($style)[$read_only]($read_only_style) "
+style = "bold yellow"
+read_only = " [ro]"
+read_only_style = "red"
+
+[git_branch]
+symbol = "git:"
+format = "[($symbol$branch)]($style) "
+style = "magenta"
+
+[git_status]
+format = '([\[$all_status$ahead_behind\]]($style) )'
+style = "red"
+conflicted = "!"
+ahead = "+${count}"
+behind = "-${count}"
+diverged = "<>${count}"
+untracked = "?"
+stashed = "*"
+modified = "~${count}"
+staged = "+${count}"
+deleted = "x${count}"
+
+# [python]
+# disabled = true
+# symbol = "py "
+# format = '[${symbol}${pyenv_prefix}${version}(\($virtualenv\))]($style) '
+# style = "yellow"
+# detect_files = ["requirements.txt", "pyproject.toml", ".python-version", "*.py"]
+
+[nodejs]
+symbol = "node "
+format = "[$symbol$version]($style) "
+style = "green"
+detect_files = ["package.json", ".node-version"]
+
+[java]
+symbol = "java "
+format = "[$symbol$version]($style) "
+style = "red"
+detect_files = ["pom.xml", "build.gradle"]
+
+[status]
+disabled = false
+format = "[$symbol$status]($style) "
+map_symbol = true
+not_found_symbol = "nf "
+not_executable_symbol = "noexec "
+sigint_symbol = "^C "
+symbol = "x "
+style = "bold red"
+
+[character]
+success_symbol = "[>](bold green) "
+error_symbol = "[>](bold red) "
