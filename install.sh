@@ -53,6 +53,13 @@ link "$DOTFILES/starship/.config/starship-tty.toml" "$HOME/.config/starship-tty.
 # Shell
 link "$DOTFILES/shell/.starship-init.sh" "$HOME/.starship-init.sh"
 
+# Ghostty (macOS만)
+if [ "$OS" = "macos" ]; then
+  if [ -d "$DOTFILES/ghostty/.config/ghostty" ]; then
+    link "$DOTFILES/ghostty/.config/ghostty" "$HOME/.config/ghostty"
+  fi
+fi
+
 # Hyprland (CachyOS / Arch)
 if [ "$OS" = "cachyos" ] || [ "$OS" = "arch" ]; then
   if [ -d "$DOTFILES/hyprland/.config/hypr" ]; then

@@ -41,7 +41,10 @@ return {
       {
         "<leader>e",
         function()
-          require("mini.files").open(vim.uv.cwd(), true)
+          local mf = require("mini.files")
+          local restore = not cwd_changed
+          cwd_changed = false
+          mf.open(vim.uv.cwd(), restore)
         end,
         desc = "Root explorer",
       },
@@ -68,6 +71,7 @@ return {
     config = function()
       local mini_files = require("mini.files")
       local marker_ns = vim.api.nvim_create_namespace("mini_files_focus_marker")
+      local cwd_changed = false
 
       local function refresh_mini_files_focus_marker()
         local ok, mf = pcall(require, "mini.files")
@@ -161,15 +165,10 @@ return {
           current_path = focused and focused.path or vim.uv.cwd()
         end
 
-        local entry = mini_files.get_fs_entry()
-        if entry and entry.path then
-          current_path = entry.path
-        end
-
-        local stat = current_path and vim.uv.fs_stat(current_path) or nil
-        local new_cwd = (stat and stat.type == "directory") and current_path or vim.fn.fnamemodify(current_path, ":h")
+        local new_cwd = current_path
 
         vim.api.nvim_set_current_dir(new_cwd)
+        cwd_changed = true
         mini_files.close()
         if state.target_window and vim.api.nvim_win_is_valid(state.target_window) then
           vim.api.nvim_set_current_win(state.target_window)
@@ -203,11 +202,18 @@ return {
             buffer = args.data.buf_id,
             desc = "Find files from current mini.files directory",
           })
-          vim.keymap.set("n", "@", set_cwd_from_mini_files, {
+vim.keymap.set("n", "<CR>", function()
+            local entry = mini_files.get_fs_entry()
+            if entry and entry.fs_type == "directory" then
+              set_cwd_from_mini_files()
+            else
+              mini_files.go_in({ close_on_file = true })
+            end
+          end, {
             buffer = args.data.buf_id,
             remap = false,
             silent = true,
-            desc = "Set cwd from current mini.files directory",
+            desc = "Open file or set cwd for directory",
           })
         end,
       })
@@ -225,7 +231,7 @@ return {
         mappings = {
           close = "<Esc>",
           go_in = "l",
-          go_in_plus = "<CR>",
+          go_in_plus = "",
           go_out = "H",
           go_out_plus = "h",
           mark_goto = "'",
