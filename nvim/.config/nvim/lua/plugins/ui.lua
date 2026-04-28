@@ -1,9 +1,29 @@
 return {
   -- 테마
   {
+    "folke/tokyonight.nvim",
+    lazy = false,
+    priority = 1000,
+    cond = function()
+      return vim.loop.os_uname().sysname == "Darwin"
+    end,
+    opts = {
+      style = "night",
+    },
+    config = function(_, opts)
+      require("tokyonight").setup(opts)
+      vim.o.background = "dark"
+      vim.cmd.colorscheme("tokyonight")
+    end,
+  },
+
+  {
     "maxmx03/solarized.nvim",
     lazy = false,
     priority = 1000,
+    cond = function()
+      return vim.loop.os_uname().sysname ~= "Darwin"
+    end,
     config = function()
       require("solarized").setup({ theme = "neo" })
       vim.o.background = "light"
@@ -25,7 +45,7 @@ return {
 
         require("lualine").setup({
         options = {
-          theme = "solarized_light",
+          theme = vim.loop.os_uname().sysname == "Darwin" and "tokyonight" or "solarized_light",
           component_separators = { left = "|", right = "|" },
           section_separators = { left = "", right = "" },
         },

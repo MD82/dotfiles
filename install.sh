@@ -37,7 +37,10 @@ link() {
     mv "$dst" "$bak"
   fi
   # Replace the symlink itself even when dst is a symlink to a directory.
-  ln -sfnT "$src" "$dst"
+  if [ -L "$dst" ]; then
+    rm "$dst"
+  fi
+  ln -sfn "$src" "$dst"
   echo "  Linked: $dst"
 }
 
