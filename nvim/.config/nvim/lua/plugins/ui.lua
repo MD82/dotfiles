@@ -4,48 +4,31 @@ return {
     "folke/tokyonight.nvim",
     lazy = false,
     priority = 1000,
-    cond = function()
-      return vim.loop.os_uname().sysname == "Darwin"
-    end,
     opts = {
-      style = "night",
+      style = "day",
     },
     config = function(_, opts)
       require("tokyonight").setup(opts)
-      vim.o.background = "dark"
-      vim.cmd.colorscheme("tokyonight")
-    end,
-  },
-
-  {
-    "maxmx03/solarized.nvim",
-    lazy = false,
-    priority = 1000,
-    cond = function()
-      return vim.loop.os_uname().sysname ~= "Darwin"
-    end,
-    config = function()
-      require("solarized").setup({ theme = "neo" })
       vim.o.background = "light"
-      vim.cmd.colorscheme("solarized")
+      vim.cmd.colorscheme("tokyonight")
     end,
   },
 
   -- 상태바
   {
     "nvim-lualine/lualine.nvim",
-      dependencies = { "nvim-tree/nvim-web-devicons" },
-      config = function()
-        local function file_label()
-          if vim.bo.buftype == "terminal" then return "Terminal" end
+    dependencies = { "echasnovski/mini.icons" },
+    config = function()
+      local function file_label()
+        if vim.bo.buftype == "terminal" then return "Terminal" end
 
-          local name = vim.fn.expand("%:t")
-          return name ~= "" and name or "[No Name]"
-        end
+        local name = vim.fn.expand("%:t")
+        return name ~= "" and name or "[No Name]"
+      end
 
-        require("lualine").setup({
+      require("lualine").setup({
         options = {
-          theme = vim.loop.os_uname().sysname == "Darwin" and "tokyonight" or "solarized_light",
+          theme = "auto",
           component_separators = { left = "|", right = "|" },
           section_separators = { left = "", right = "" },
         },
@@ -91,7 +74,7 @@ return {
   -- 에러/경고 목록
   {
     "folke/trouble.nvim",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
+    dependencies = { "echasnovski/mini.icons" },
     keys = {
       { "<leader>xx", "<cmd>Trouble diagnostics toggle<cr>", desc = "Diagnostics" },
     },

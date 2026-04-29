@@ -2,6 +2,8 @@ local function build_find_command()
   return { "rg", "--files", "--glob", "!.git/*", "--glob", "!node_modules/**" }
 end
 
+local cwd_changed = false
+
 local function list_project_files(cwd)
   if vim.fn.executable("rg") == 1 then
     local result = vim.system(build_find_command(), { cwd = cwd, text = true }):wait()
@@ -71,7 +73,6 @@ return {
     config = function()
       local mini_files = require("mini.files")
       local marker_ns = vim.api.nvim_create_namespace("mini_files_focus_marker")
-      local cwd_changed = false
 
       local function refresh_mini_files_focus_marker()
         local ok, mf = pcall(require, "mini.files")
@@ -202,7 +203,7 @@ return {
             buffer = args.data.buf_id,
             desc = "Find files from current mini.files directory",
           })
-vim.keymap.set("n", "<CR>", function()
+          vim.keymap.set("n", "<CR>", function()
             local entry = mini_files.get_fs_entry()
             if entry and entry.fs_type == "directory" then
               set_cwd_from_mini_files()
