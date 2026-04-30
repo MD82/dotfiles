@@ -73,6 +73,52 @@ return {
     config = function()
       local mini_files = require("mini.files")
       local marker_ns = vim.api.nvim_create_namespace("mini_files_focus_marker")
+      local last_target_window = nil
+
+      local function is_regular_edit_window(win_id)
+        if not (win_id and vim.api.nvim_win_is_valid(win_id)) then return false end
+        if vim.api.nvim_win_get_config(win_id).relative ~= "" then return false end
+
+        local buf_id = vim.api.nvim_win_get_buf(win_id)
+        return vim.bo[buf_id].buftype == ""
+      end
+
+      local function remember_target_window()
+        local win_id = vim.api.nvim_get_current_win()
+        if is_regular_edit_window(win_id) then
+          last_target_window = win_id
+        end
+      end
+
+      local function get_target_window(preferred)
+        if is_regular_edit_window(preferred) then return preferred end
+        if is_regular_edit_window(last_target_window) then return last_target_window end
+
+        for _, win_id in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+          if is_regular_edit_window(win_id) then return win_id end
+        end
+      end
+
+      local function fix_mini_files_target_window()
+        local state = mini_files.get_explorer_state()
+        if not state then return end
+
+        local target_window = get_target_window(state.target_window)
+        if target_window then
+          mini_files.set_target_window(target_window)
+        end
+      end
+
+      local function close_lazy_windows()
+        for _, win_id in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+          if vim.api.nvim_win_is_valid(win_id) then
+            local buf_id = vim.api.nvim_win_get_buf(win_id)
+            if vim.bo[buf_id].filetype == "lazy" then
+              vim.api.nvim_win_close(win_id, true)
+            end
+          end
+        end
+      end
 
       local function refresh_mini_files_focus_marker()
         local ok, mf = pcall(require, "mini.files")
@@ -135,7 +181,7 @@ return {
 
         local stat = current_path and vim.uv.fs_stat(current_path) or nil
         local search_dir = (stat and stat.type == "directory") and current_path or vim.fn.fnamemodify(current_path, ":h")
-        local target_win = state.target_window
+        local target_win = get_target_window(state.target_window)
 
         mini_files.close()
         if target_win and vim.api.nvim_win_is_valid(target_win) then
@@ -171,10 +217,29 @@ return {
         vim.api.nvim_set_current_dir(new_cwd)
         cwd_changed = true
         mini_files.close()
-        if state.target_window and vim.api.nvim_win_is_valid(state.target_window) then
-          vim.api.nvim_set_current_win(state.target_window)
+        local target_win = get_target_window(state.target_window)
+        if target_win then
+          vim.api.nvim_set_current_win(target_win)
         end
         vim.notify("cwd -> " .. new_cwd, vim.log.levels.INFO, { title = "mini.files" })
+      end
+
+      local function open_entry_from_mini_files()
+        local entry = mini_files.get_fs_entry()
+        if entry and entry.fs_type == "directory" then
+          set_cwd_from_mini_files()
+        else
+          close_lazy_windows()
+          fix_mini_files_target_window()
+          mini_files.go_in({ close_on_file = true })
+        end
+      end
+
+      local function enter_directory_from_mini_files()
+        local entry = mini_files.get_fs_entry()
+        if entry and entry.fs_type == "directory" then
+          mini_files.go_in()
+        end
       end
 
       vim.api.nvim_set_hl(0, "MiniFilesTitle", { fg = "#f9e2af", bold = true })
@@ -185,9 +250,14 @@ return {
         callback = function(args)
           if args.match == "MiniFilesExplorerOpen" then
             mini_files.set_bookmark("h", "~", { desc = "Home" })
+            fix_mini_files_target_window()
           end
           refresh_mini_files_focus_marker()
         end,
+      })
+
+      vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
+        callback = remember_target_window,
       })
 
       vim.api.nvim_create_autocmd("User", {
@@ -203,18 +273,17 @@ return {
             buffer = args.data.buf_id,
             desc = "Find files from current mini.files directory",
           })
-          vim.keymap.set("n", "<CR>", function()
-            local entry = mini_files.get_fs_entry()
-            if entry and entry.fs_type == "directory" then
-              set_cwd_from_mini_files()
-            else
-              mini_files.go_in({ close_on_file = true })
-            end
-          end, {
+          vim.keymap.set("n", "<CR>", open_entry_from_mini_files, {
             buffer = args.data.buf_id,
             remap = false,
             silent = true,
             desc = "Open file or set cwd for directory",
+          })
+          vim.keymap.set("n", "l", enter_directory_from_mini_files, {
+            buffer = args.data.buf_id,
+            remap = false,
+            silent = true,
+            desc = "Enter directory",
           })
         end,
       })
@@ -231,7 +300,7 @@ return {
         },
         mappings = {
           close = "<Esc>",
-          go_in = "l",
+          go_in = "",
           go_in_plus = "",
           go_out = "H",
           go_out_plus = "h",
@@ -375,19 +444,13 @@ return {
           map("n", "<leader>hr", gs.reset_hunk)
           map("n", "<leader>hp", gs.preview_hunk)
           map("n", "<leader>hb", gs.toggle_current_line_blame)
+          map("n", "<leader>gd", gs.diffthis)
+          map("n", "<leader>gs", function() vim.cmd("terminal git status") end)
+          map("n", "<leader>gc", function() vim.cmd("terminal git commit") end)
         end,
       })
     end,
   },
-  {
-    "tpope/vim-fugitive",
-    keys = {
-      { "<leader>gs", "<cmd>Git<CR>",        desc = "Git status" },
-      { "<leader>gc", "<cmd>Git commit<CR>", desc = "Git commit" },
-      { "<leader>gd", "<cmd>Gdiffsplit<CR>", desc = "Git diff split" },
-    },
-  },
-
   -- 괄호 자동 닫기
   {
     "echasnovski/mini.pairs",

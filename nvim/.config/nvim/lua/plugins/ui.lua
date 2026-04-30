@@ -4,13 +4,30 @@ return {
     "folke/tokyonight.nvim",
     lazy = false,
     priority = 1000,
+    cond = function()
+      return vim.loop.os_uname().sysname == "Darwin"
+    end,
     opts = {
-      style = "day",
+      style = "night",
     },
     config = function(_, opts)
       require("tokyonight").setup(opts)
-      vim.o.background = "light"
+      vim.o.background = "dark"
       vim.cmd.colorscheme("tokyonight")
+    end,
+  },
+
+  {
+    "maxmx03/solarized.nvim",
+    lazy = false,
+    priority = 1000,
+    cond = function()
+      return vim.loop.os_uname().sysname ~= "Darwin"
+    end,
+    config = function()
+      require("solarized").setup({ theme = "neo" })
+      vim.o.background = "light"
+      vim.cmd.colorscheme("solarized")
     end,
   },
 
@@ -28,7 +45,7 @@ return {
 
       require("lualine").setup({
         options = {
-          theme = "auto",
+          theme = vim.loop.os_uname().sysname == "Darwin" and "tokyonight" or "solarized_light",
           component_separators = { left = "|", right = "|" },
           section_separators = { left = "", right = "" },
         },
@@ -65,19 +82,7 @@ return {
         { "<leader>fg", desc = "Live grep" },
         { "<leader>fb", desc = "Buffers" },
         { "<leader>fr", desc = "Recent files" },
-        { "<leader>x",  group = "Diagnostics" },
-        { "<leader>xx", desc = "Diagnostics toggle" },
       })
     end,
-  },
-
-  -- 에러/경고 목록
-  {
-    "folke/trouble.nvim",
-    dependencies = { "echasnovski/mini.icons" },
-    keys = {
-      { "<leader>xx", "<cmd>Trouble diagnostics toggle<cr>", desc = "Diagnostics" },
-    },
-    config = true,
   },
 }
