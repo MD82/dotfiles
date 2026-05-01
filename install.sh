@@ -53,9 +53,6 @@ link "$DOTFILES/starship/.config/starship.toml" "$HOME/.config/starship.toml"
   || echo "  Skipped: git/ignore not found (create $DOTFILES/git/.config/git/ignore to enable)"
 link "$DOTFILES/starship/.config/starship-tty.toml" "$HOME/.config/starship-tty.toml"
 
-# Shell
-link "$DOTFILES/shell/.starship-init.sh" "$HOME/.starship-init.sh"
-
 # Ghostty (macOS만)
 if [ "$OS" = "macos" ]; then
   if [ -d "$DOTFILES/ghostty/.config/ghostty" ]; then

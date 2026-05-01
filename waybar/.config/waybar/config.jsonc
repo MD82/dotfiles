@@ -1,0 +1,78 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 26,
+    "spacing": 6,
+    "modules-left": [
+        "hyprland/workspaces",
+        "hyprland/window"
+    ],
+    "modules-right": [
+        "network",
+        "custom/volume",
+        "custom/power-mode",
+        "custom/session",
+        "clock",
+        "tray"
+    ],
+    "hyprland/workspaces": {
+        "format": "{icon}",
+        "format-icons": {
+            "active": "●",
+            "default": "○"
+        }
+    },
+    "hyprland/window": {
+        "max-length": 60,
+        "separate-outputs": true
+    },
+    "network": {
+        "format-wifi": "{essid} {signalStrength}%",
+        "format-ethernet": "{ifname}",
+        "format-disconnected": "네트워크 끊김",
+        "tooltip-format": "{ifname} {ipaddr}/{cidr}",
+        "on-click": "/home/md82/.local/bin/wifi-picker"
+    },
+    "custom/volume": {
+        "exec": "bash /home/md82/.local/bin/waybar-volume",
+        "return-type": "json",
+        "interval": 2,
+        "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
+        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-",
+        "tooltip": true
+    },
+    "custom/power-mode": {
+        "exec": "/home/md82/.local/bin/waybar-power-mode",
+        "return-type": "json",
+        "interval": 60,
+        "tooltip": true
+    },
+    "custom/session": {
+        "exec": "printf '{\"text\":\"⏻\",\"tooltip\":\"Logout / Suspend / Poweroff / Reboot\"}'",
+        "return-type": "json",
+        "interval": "once",
+        "on-click": "/home/md82/.local/bin/waybar-session-menu",
+        "tooltip": true
+    },
+    "clock": {
+        "format": "{:%Y-%m-%d %H:%M}",
+        "interval": 60,
+        "tooltip-format": "<tt><small>{calendar}</small></tt>",
+        "calendar": {
+            "mode": "month",
+            "weeks-pos": "right",
+            "on-scroll": 1,
+            "format": {
+                "months": "<span color='#f2f2f2'><b>{}</b></span>",
+                "days": "<span color='#d8d8d8'>{}</span>",
+                "weeks": "<span color='#8ecae6'><b>W{}</b></span>",
+                "weekdays": "<span color='#ffd166'><b>{}</b></span>",
+                "today": "<span color='#ff6b6b'><b><u>{}</u></b></span>"
+            }
+        },
+        "on-click": "/home/md82/.local/bin/time-control-popup"
+    },
+    "tray": {
+        "spacing": 8
+    }
+}

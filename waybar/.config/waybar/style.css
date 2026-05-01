@@ -1,0 +1,56 @@
+* {
+    font-family: Sans;
+    font-size: 13px;
+}
+
+window#waybar {
+    background: rgba(24, 24, 24, 0.92);
+    color: #f2f2f2;
+}
+
+#workspaces,
+#window,
+#network,
+#custom-volume,
+#custom-power-mode,
+#custom-session,
+#clock,
+#tray {
+    padding: 0 10px;
+}
+
+#workspaces button {
+    padding: 0 4px;
+    color: #d0d0d0;
+    background: transparent;
+    border: none;
+}
+
+#workspaces button.active {
+    color: #ffffff;
+}
+
+#custom-power-mode.save {
+    color: #ffd166;
+}
+
+#custom-power-mode.performance {
+    color: #7bd389;
+}
+
+#custom-power-mode.critical {
+    color: #ff6b6b;
+}
+
+#custom-power-mode.unknown {
+    color: #9ca3af;
+}
+
+#custom-session {
+    color: #ffb703;
+    font-size: 15px;
+}
+
+#custom-session:hover {
+    background: rgba(255, 183, 3, 0.12);
+}

@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+action="${1:-}"
+
+ac_online() {
+  local online_file
+  for online_file in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online /sys/class/power_supply/ACAD/online; do
+    if [[ -r "${online_file}" ]] && [[ "$(<"${online_file}")" == "1" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+run_for_power() {
+  local wanted="$1"
+  shift
+
+  case "${wanted}" in
+    ac)
+      ac_online || exit 0
+      ;;
+    battery)
+      ! ac_online || exit 0
+      ;;
+    *)
+      exit 2
+      ;;
+  esac
+
+  exec "$@"
+}
+
+kbd_device() {
+  local device
+  for device in rgb:kbd_backlight smc::kbd_backlight kbd_backlight; do
+    if [[ -e "/sys/class/leds/${device}/brightness" ]]; then
+      printf '%s\n' "${device}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+run_kbd_for_power() {
+  local wanted="$1"
+  local device
+  shift
+
+  case "${wanted}" in
+    ac)
+      ac_online || exit 0
+      ;;
+    battery)
+      ! ac_online || exit 0
+      ;;
+    any)
+      ;;
+    *)
+      exit 2
+      ;;
+  esac
+
+  device="$(kbd_device)" || exit 0
+  exec brightnessctl --device="${device}" "$@"
+}
+
+suspend_unless_ssh() {
+  ss -H -t state established '( dport = :10005 or sport = :10005 )' | grep -q . || exec systemctl suspend
+}
+
+case "${action}" in
+  dim-display)
+    exec brightnessctl -s set 10
+    ;;
+  restore-display)
+    exec brightnessctl -r
+    ;;
+  battery-dim-display)
+    run_for_power battery brightnessctl -s set 10
+    ;;
+  battery-restore-display)
+    run_for_power battery brightnessctl -r
+    ;;
+  ac-dim-display)
+    run_for_power ac brightnessctl -s set 30
+    ;;
+  ac-restore-display)
+    run_for_power ac brightnessctl -r
+    ;;
+  kbd-off)
+    run_kbd_for_power any -s set 0
+    ;;
+  kbd-restore)
+    run_kbd_for_power any -r
+    ;;
+  battery-kbd-off)
+    run_kbd_for_power battery -s set 0
+    ;;
+  battery-kbd-restore)
+    run_kbd_for_power battery -r
+    ;;
+  ac-kbd-off)
+    run_kbd_for_power ac -s set 0
+    ;;
+  ac-kbd-restore)
+    run_kbd_for_power ac -r
+    ;;
+  lock)
+    exec loginctl lock-session
+    ;;
+  battery-lock)
+    run_for_power battery loginctl lock-session
+    ;;
+  ac-lock)
+    run_for_power ac loginctl lock-session
+    ;;
+  battery-shutdown)
+    run_for_power battery shutdown -h now
+    ;;
+  ac-shutdown)
+    run_for_power ac shutdown -h now
+    ;;
+  dpms-off)
+    exec hyprctl dispatch dpms off
+    ;;
+  battery-dpms-off)
+    run_for_power battery hyprctl dispatch dpms off
+    ;;
+  ac-dpms-off)
+    run_for_power ac hyprctl dispatch dpms off
+    ;;
+  dpms-on)
+    exec hyprctl dispatch dpms on
+    ;;
+  suspend-unless-ssh)
+    suspend_unless_ssh
+    ;;
+  *)
+    printf 'Usage: %s ACTION\n' "$0" >&2
+    exit 2
+    ;;
+esac
