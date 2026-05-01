@@ -5,6 +5,19 @@ return {
     opts = {},
   },
 
+  -- LSP/DAP 보조 도구 설치
+  {
+    "WhoIsSethDaniel/mason-tool-installer.nvim",
+    dependencies = { "mason-org/mason.nvim" },
+    opts = {
+      ensure_installed = {
+        "jdtls",
+        "java-debug-adapter",
+        "java-test",
+      },
+    },
+  },
+
   -- Mason <-> lspconfig 브릿지
   {
     "mason-org/mason-lspconfig.nvim",
@@ -80,6 +93,9 @@ return {
           end
           map("gd",         vim.lsp.buf.definition,      "Go to definition")
           map("gr",         vim.lsp.buf.references,       "References")
+          map("gI",         vim.lsp.buf.implementation,   "Go to implementation")
+          map("<leader>ci", vim.lsp.buf.incoming_calls,   "Incoming calls")
+          map("<leader>co", vim.lsp.buf.outgoing_calls,   "Outgoing calls")
           map("K",          vim.lsp.buf.hover,           "Hover docs")
           map("<leader>rn", vim.lsp.buf.rename,          "Rename")
           map("<leader>ca", vim.lsp.buf.code_action,     "Code action")
