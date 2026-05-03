@@ -66,6 +66,7 @@ if [ "$OS" = "cachyos" ] || [ "$OS" = "arch" ]; then
     link "$DOTFILES/hyprland/.config/hypr" "$HOME/.config/hypr"
     mkdir -p "$HOME/.config/hypr/conf"
     link "$DOTFILES/hyprland/.config/hypr/conf/$OS" "$HOME/.config/hypr/conf/current"
+    link "$DOTFILES/hyprland/.config/hypr/conf/$OS/hypridle.conf" "$HOME/.config/hypr/hypridle.conf"
   fi
 fi
 
