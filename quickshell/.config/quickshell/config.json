@@ -54,6 +54,9 @@
   "position": {
     "topMargin": 100
   },
+  "bar": {
+    "devMode": false
+  },
   "windowPreview": {
     "iconToWindowRatio": 0.25,
     "iconToWindowRatioCompact": 0.45,
