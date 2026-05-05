@@ -1,0 +1,5 @@
+#!/bin/sh
+
+choice="$(printf 'Cancel\nClose\n' | fuzzel --config=/home/md82/.config/fuzzel/confirm.ini --dmenu --prompt 'Close active window? ')"
+
+[ "$choice" = "Close" ] && hyprctl dispatch killactive

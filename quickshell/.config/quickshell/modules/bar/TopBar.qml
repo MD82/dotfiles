@@ -22,6 +22,7 @@ Variants {
     // Wrap both PanelWindows in a Scope so they share the same modelData
     Scope {
         required property var modelData
+        readonly property int barHeight: 48
 
         PanelWindow {
             id: bar
@@ -33,7 +34,7 @@ Variants {
                 right: true
             }
 
-            height: 56
+            height: barHeight
             color: "transparent"
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.exclusiveZone: height
@@ -62,18 +63,46 @@ Variants {
                     screen: bar.screen
                 }
 
-                // Center group: Clock + Stats
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 8
+                // Center group: normal clock/stats or development context
+                Item {
+                    anchors {
+                        left: leftIsland.right
+                        leftMargin: 12
+                        right: rightIsland.left
+                        rightMargin: 12
+                        verticalCenter: parent.verticalCenter
+                    }
+                    height: 40
 
-                    ClockIsland {
-                        id: centerIsland
-                        anchors.verticalCenter: parent.verticalCenter
+                    Row {
+                        visible: !Common.Config.options.bar.devMode
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        ClockIsland {
+                            id: centerIsland
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        StatsIsland {
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
                     }
 
-                    StatsIsland {
-                        anchors.verticalCenter: parent.verticalCenter
+                    RowLayout {
+                        visible: Common.Config.options.bar.devMode
+                        anchors.fill: parent
+                        spacing: 8
+
+                        DevContextIsland {
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: 720
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+
+                        StatsIsland {
+                            Layout.alignment: Qt.AlignVCenter
+                        }
                     }
                 }
 
@@ -96,7 +125,7 @@ Variants {
             visible: rightIsland.notifOpen
 
             anchors { top: true; right: true }
-            margins.top: 56 + 6
+            margins.top: barHeight + 6
             margins.right: 12
 
             color: "transparent"

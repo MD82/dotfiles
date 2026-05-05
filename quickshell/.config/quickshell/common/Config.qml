@@ -118,6 +118,10 @@ Singleton {
             property int topMargin: root.readInt("position.topMargin", 100)
         }
 
+        property QtObject bar: QtObject {
+            property bool devMode: root.readBool("bar.devMode", true)
+        }
+
         property QtObject windowPreview: QtObject {
             property real iconToWindowRatio: root.readReal("windowPreview.iconToWindowRatio", 0.25)
             property real iconToWindowRatioCompact: root.readReal("windowPreview.iconToWindowRatioCompact", 0.45)
@@ -135,7 +139,7 @@ Singleton {
         command: [
             "sh",
             "-lc",
-            "cfg=\"${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/overview/config.json\"; [ -r \"$cfg\" ] && cat \"$cfg\""
+            "base=\"${XDG_CONFIG_HOME:-$HOME/.config}/quickshell\"; for cfg in \"$base/config.json\" \"$base/overview/config.json\"; do [ -r \"$cfg\" ] && cat \"$cfg\" && exit 0; done"
         ]
         stdout: StdioCollector {
             id: configCollector
