@@ -46,11 +46,9 @@ link() {
 
 
 # 공통
-link "$DOTFILES/tmux/.tmux.conf"             "$HOME/.tmux.conf"
-link "$DOTFILES/nvim/.config/nvim"           "$HOME/.config/nvim"
+link "$DOTFILES/tmux/.tmux.conf" "$HOME/.tmux.conf"
+link "$DOTFILES/nvim/.config/nvim" "$HOME/.config/nvim"
 link "$DOTFILES/starship/.config/starship.toml" "$HOME/.config/starship.toml"
-[ -f "$DOTFILES/git/.config/git/ignore" ] && link "$DOTFILES/git/.config/git/ignore" "$HOME/.config/git/ignore" \
-  || echo "  Skipped: git/ignore not found (create $DOTFILES/git/.config/git/ignore to enable)"
 link "$DOTFILES/starship/.config/starship-tty.toml" "$HOME/.config/starship-tty.toml"
 
 # Ghostty (macOS만)
