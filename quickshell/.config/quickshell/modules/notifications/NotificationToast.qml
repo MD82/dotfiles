@@ -40,9 +40,6 @@ Variants {
             interval: 4000
             running: toastWindow.latestNotif !== null
             repeat: false
-            onRunningChanged: {
-                if (running) NotificationService.markAllRead()
-            }
         }
 
         Rectangle {

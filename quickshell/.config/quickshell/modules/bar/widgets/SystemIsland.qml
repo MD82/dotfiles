@@ -19,7 +19,6 @@ IslandBase {
     implicitContentWidth: systemRow.implicitWidth
     implicitContentHeight: systemRow.implicitHeight
 
-    property bool notifOpen: false
     property string inputLang: "EN"
 
     // fcitx5 상태 폴링 (1=영문, 2=한글)
@@ -174,18 +173,6 @@ IslandBase {
                 : Common.Appearance.m3colors.m3onSurfaceVariant
         }
 
-        // Divider
-        Rectangle {
-            width: 1
-            height: 20
-            color: Common.Appearance.m3colors.m3outlineVariant
-            Layout.alignment: Qt.AlignVCenter
-        }
-
-        // ── Notification bell ───────────────────────────────
-        NotifBell {
-            onToggle: root.notifOpen = !root.notifOpen
-        }
     }
 
 }
