@@ -44,43 +44,59 @@ link() {
   echo "  Linked: $dst"
 }
 
+link_dir_if_exists() {
+  local src="$1"
+  local dst="$2"
+  if [ -d "$src" ]; then
+    link "$src" "$dst"
+  fi
+}
+
+link_file_if_exists() {
+  local src="$1"
+  local dst="$2"
+  local message="$3"
+  if [ -f "$src" ]; then
+    link "$src" "$dst"
+  elif [ -n "$message" ]; then
+    echo "  Skipped: $message"
+  fi
+}
 
 # 공통
 link "$DOTFILES/tmux/.tmux.conf" "$HOME/.tmux.conf"
 link "$DOTFILES/nvim/.config/nvim" "$HOME/.config/nvim"
 link "$DOTFILES/starship/.config/starship.toml" "$HOME/.config/starship.toml"
+<<<<<<< HEAD
+=======
+link_file_if_exists "$DOTFILES/git/.config/git/ignore" "$HOME/.config/git/ignore" \
+  "git/ignore not found (create $DOTFILES/git/.config/git/ignore to enable)"
+>>>>>>> e559d8b (neovim 을 zed에서 사용하는 방식으로 전환, zellij basic config setting backup)
 link "$DOTFILES/starship/.config/starship-tty.toml" "$HOME/.config/starship-tty.toml"
 
-# Ghostty (macOS만)
-if [ "$OS" = "macos" ]; then
-  if [ -d "$DOTFILES/ghostty/.config/ghostty" ]; then
-    link "$DOTFILES/ghostty/.config/ghostty" "$HOME/.config/ghostty"
-  fi
-fi
-
-# Hyprland (CachyOS / Arch)
-if [ "$OS" = "cachyos" ] || [ "$OS" = "arch" ]; then
+link_hyprland() {
   if [ -d "$DOTFILES/hyprland/.config/hypr" ]; then
     link "$DOTFILES/hyprland/.config/hypr" "$HOME/.config/hypr"
     mkdir -p "$HOME/.config/hypr/conf"
     link "$DOTFILES/hyprland/.config/hypr/conf/$OS" "$HOME/.config/hypr/conf/current"
     link "$DOTFILES/hyprland/.config/hypr/conf/$OS/hypridle.conf" "$HOME/.config/hypr/hypridle.conf"
   fi
-fi
+}
 
-# Waybar (Arch만)
-if [ "$OS" = "arch" ]; then
-  if [ -d "$DOTFILES/waybar/.config/waybar" ]; then
-    link "$DOTFILES/waybar/.config/waybar" "$HOME/.config/waybar"
-  fi
-fi
-
-# Quickshell (CachyOS만)
-if [ "$OS" = "cachyos" ]; then
-  if [ -d "$DOTFILES/quickshell/.config/quickshell" ]; then
-    link "$DOTFILES/quickshell/.config/quickshell" "$HOME/.config/quickshell"
-  fi
-fi
+case "$OS" in
+  macos)
+    link_dir_if_exists "$DOTFILES/ghostty/.config/ghostty" "$HOME/.config/ghostty"
+    link_dir_if_exists "$DOTFILES/zellij" "$HOME/.config/zellij"
+    ;;
+  arch)
+    link_hyprland
+    link_dir_if_exists "$DOTFILES/waybar/.config/waybar" "$HOME/.config/waybar"
+    ;;
+  cachyos)
+    link_hyprland
+    link_dir_if_exists "$DOTFILES/quickshell/.config/quickshell" "$HOME/.config/quickshell"
+    ;;
+esac
 
 echo ""
 echo "Done! dotfiles linked for: $OS"

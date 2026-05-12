@@ -1,0 +1,42 @@
+// Keep Zellij defaults and only override the global Alt bindings we intentionally use.
+keybinds {
+    shared_except "locked" {
+        unbind "Alt left" "Alt down" "Alt up" "Alt right"
+        unbind "Alt +" "Alt -" "Alt =" "Alt [" "Alt ]"
+        unbind "Alt f" "Alt n" "Alt i" "Alt o" "Alt p" "Alt Shift p"
+
+        bind "Alt b" { MoveFocusOrTab "left"; }
+        bind "Alt f" { MoveFocusOrTab "right"; }
+        bind "Alt h" { MoveFocusOrTab "left"; }
+        bind "Alt j" { MoveFocus "down"; }
+        bind "Alt k" { MoveFocus "up"; }
+        bind "Alt l" { MoveFocusOrTab "right"; }
+        bind "Alt n" { NewPane; }
+        bind "Alt Shift f" { ToggleFloatingPanes; }
+    }
+}
+
+plugins {
+    about location="zellij:about"
+    compact-bar location="zellij:compact-bar"
+    configuration location="zellij:configuration"
+    filepicker location="zellij:strider" {
+        cwd "/"
+    }
+    plugin-manager location="zellij:plugin-manager"
+    session-manager location="zellij:session-manager"
+    status-bar location="zellij:status-bar"
+    strider location="zellij:strider"
+    tab-bar location="zellij:tab-bar"
+    welcome-screen location="zellij:session-manager" {
+        welcome_screen true
+    }
+}
+
+load_plugins {
+    zellij:link
+}
+
+web_client {
+    font "monospace"
+}

@@ -30,6 +30,9 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
     map("n", "gd", vim.lsp.buf.definition, "Go to definition")
     map("n", "gr", vim.lsp.buf.references, "References")
+    map("n", "gI", vim.lsp.buf.implementation, "Go to implementation")
+    map("n", "<leader>ci", vim.lsp.buf.incoming_calls, "Incoming calls")
+    map("n", "<leader>co", vim.lsp.buf.outgoing_calls, "Outgoing calls")
     map("n", "K", vim.lsp.buf.hover, "Hover docs")
     map("n", "<leader>rn", vim.lsp.buf.rename, "Rename")
     map("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
@@ -53,4 +56,21 @@ vim.lsp.config("lua_ls", {
 })
 vim.lsp.enable("lua_ls")
 
-return {}
+return {
+  {
+    "mason-org/mason.nvim",
+    opts = {},
+  },
+  {
+    "WhoIsSethDaniel/mason-tool-installer.nvim",
+    dependencies = { "mason-org/mason.nvim" },
+    opts = {
+      ensure_installed = {
+        "lua-language-server",
+        "jdtls",
+        "java-debug-adapter",
+        "java-test",
+      },
+    },
+  },
+}
