@@ -40,9 +40,70 @@ local profiles = {
       "dunst",
       "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1",
       "fcitx5 -d",
-      "pkill hypridle; hypridle --config ~/.config/hypr/conf/arch/hypridle.conf",
       "bash ~/.config/hypr/scripts/battery-suspend-10",
     },
+    hypridle_config = [[
+general {
+    before_sleep_cmd = loginctl lock-session
+    after_sleep_cmd = hyprctl dispatch dpms on
+}
+
+listener {
+    timeout = 60
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action battery-dim-display
+    on-resume = bash ~/.config/hypr/scripts/idle-power-action battery-restore-display
+}
+
+listener {
+    timeout = 150
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action battery-kbd-off
+    on-resume = bash ~/.config/hypr/scripts/idle-power-action battery-kbd-restore
+}
+
+listener {
+    timeout = 180
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action ac-dim-display
+    on-resume = bash ~/.config/hypr/scripts/idle-power-action ac-restore-display
+}
+
+listener {
+    timeout = 300
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action battery-lock
+}
+
+listener {
+    timeout = 300
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action ac-kbd-off
+    on-resume = bash ~/.config/hypr/scripts/idle-power-action ac-kbd-restore
+}
+
+listener {
+    timeout = 480
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action battery-dpms-off
+    on-resume = bash ~/.config/hypr/scripts/idle-power-action dpms-on
+}
+
+listener {
+    timeout = 600
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action battery-shutdown
+}
+
+listener {
+    timeout = 600
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action ac-lock
+}
+
+listener {
+    timeout = 900
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action ac-dpms-off
+    on-resume = bash ~/.config/hypr/scripts/idle-power-action dpms-on
+}
+
+listener {
+    timeout = 1800
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action ac-shutdown
+}
+]],
     appearance = {
       rounding = 4,
       shadow_enabled = false,
@@ -158,11 +219,39 @@ local profiles = {
       "systemctl --user start pipewire wireplumber pipewire-pulse",
       "systemctl --user start at-spi-dbus-bus",
       "systemctl --user start xdg-desktop-portal",
-      "pkill hypridle; hypridle --config ~/.config/hypr/conf/cachyos/hypridle.conf",
       "pkill -f ws-edge-left.sh; ~/.config/hypr/scripts/ws-edge-left.sh",
       "quickshell --path ~/.config/quickshell/shell.qml",
       "fcitx5 -d",
     },
+    hypridle_config = [[
+general {
+    lock_cmd = pidof hyprlock || hyprlock --config ~/.config/hypr/hyprlock/hyprlock.conf
+    before_sleep_cmd = loginctl lock-session
+    after_sleep_cmd = hyprctl dispatch dpms on
+}
+
+listener {
+    timeout = 60
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action dim-display
+    on-resume = bash ~/.config/hypr/scripts/idle-power-action restore-display
+}
+
+listener {
+    timeout = 120
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action lock
+}
+
+listener {
+    timeout = 330
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action dpms-off
+    on-resume = bash ~/.config/hypr/scripts/idle-power-action dpms-on
+}
+
+listener {
+    timeout = 600
+    on-timeout = bash ~/.config/hypr/scripts/idle-power-action suspend-unless-ssh
+}
+]],
     appearance = {
       rounding = 10,
       shadow_enabled = true,

@@ -67,19 +67,13 @@ link_file_if_exists() {
 link "$DOTFILES/tmux/.tmux.conf" "$HOME/.tmux.conf"
 link "$DOTFILES/nvim/.config/nvim" "$HOME/.config/nvim"
 link "$DOTFILES/starship/.config/starship.toml" "$HOME/.config/starship.toml"
-<<<<<<< HEAD
-=======
 link_file_if_exists "$DOTFILES/git/.config/git/ignore" "$HOME/.config/git/ignore" \
   "git/ignore not found (create $DOTFILES/git/.config/git/ignore to enable)"
->>>>>>> e559d8b (neovim 을 zed에서 사용하는 방식으로 전환, zellij basic config setting backup)
 link "$DOTFILES/starship/.config/starship-tty.toml" "$HOME/.config/starship-tty.toml"
 
 link_hyprland() {
   if [ -d "$DOTFILES/hyprland/.config/hypr" ]; then
     link "$DOTFILES/hyprland/.config/hypr" "$HOME/.config/hypr"
-    mkdir -p "$HOME/.config/hypr/conf"
-    link "$DOTFILES/hyprland/.config/hypr/conf/$OS" "$HOME/.config/hypr/conf/current"
-    link "$DOTFILES/hyprland/.config/hypr/conf/$OS/hypridle.conf" "$HOME/.config/hypr/hypridle.conf"
   fi
 }
 

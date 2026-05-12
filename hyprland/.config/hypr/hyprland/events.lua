@@ -2,6 +2,42 @@ local M = {}
 
 function M.setup(ctx)
   local _ENV = ctx
+  local function shell_quote(value)
+    return "'" .. tostring(value):gsub("'", "'\\''") .. "'"
+  end
+
+  local function write_profile_hypridle_config()
+    local config = os_profile and os_profile.hypridle_config
+    if not config or config == "" then
+      return nil
+    end
+
+    local runtime_dir = os.getenv("XDG_RUNTIME_DIR") or "/tmp"
+    local path = runtime_dir .. "/hypridle-" .. tostring(os_id or "default") .. ".conf"
+    local file = io.open(path, "w")
+    if not file then
+      return nil
+    end
+
+    file:write(config)
+    if config:sub(-1) ~= "\n" then
+      file:write("\n")
+    end
+    file:close()
+    return path
+  end
+
+  local function start_profile_hypridle()
+    if verify_config then
+      return
+    end
+
+    local config_path = write_profile_hypridle_config()
+    if config_path then
+      hl.exec_cmd("pkill hypridle; hypridle --config " .. shell_quote(config_path))
+    end
+  end
+
   local function run_profile_autostart()
     if verify_config then
       return
@@ -15,6 +51,7 @@ function M.setup(ctx)
   hl.on("hyprland.start", function()
     apply_nstack_config()
     apply_rules()
+    start_profile_hypridle()
     run_profile_autostart()
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
     hl.exec_cmd("wl-paste --type image --watch cliphist store")
