@@ -102,6 +102,7 @@ Modifiers:
 | `XF86AudioRaiseVolume/LowerVolume` | Increase/decrease volume and unmute | 미디어 키로 볼륨을 조절하고 음소거를 해제합니다. |
 | `XF86AudioMute` | Toggle mute | 미디어 키로 음소거를 토글합니다. |
 | `XF86MonBrightnessUp/Down` | Increase/decrease brightness | 화면 밝기를 올리거나 내립니다. |
+| `XF86KbdBrightnessUp/Down` | Increase/decrease keyboard backlight | 키보드 백라이트를 올리거나 내립니다. |
 
 ## Utilities
 

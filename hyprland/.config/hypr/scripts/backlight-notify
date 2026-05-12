@@ -1,36 +1,83 @@
 #!/bin/bash
 
+screen_device() {
+    for device in intel_backlight acpi_video0 amdgpu_bl0; do
+        if [ -e "/sys/class/backlight/${device}/brightness" ]; then
+            printf '%s\n' "$device"
+            return 0
+        fi
+    done
+
+    brightnessctl --list | sed -n "s/^Device '\([^']*\)' of class 'backlight':$/\1/p" | head -n1
+}
+
+kbd_device() {
+    for device in smc::kbd_backlight rgb:kbd_backlight kbd_backlight; do
+        if [ -e "/sys/class/leds/${device}/brightness" ]; then
+            printf '%s\n' "$device"
+            return 0
+        fi
+    done
+
+    brightnessctl --list | sed -n "s/^Device '\([^']*kbd_backlight[^']*\)' of class 'leds':$/\1/p" | head -n1
+}
+
+brightness() {
+    local device="$1"
+    shift
+
+    if [ -n "$device" ]; then
+        brightnessctl --device="$device" "$@"
+    else
+        brightnessctl "$@"
+    fi
+}
+
+kbd_brightness() {
+    local device
+    device="$(kbd_device)"
+
+    if [ -z "$device" ]; then
+        dunstify -a "Keyboard Backlight" -u low -i "keyboard-brightness" \
+            -h string:x-dunst-stack-tag:"kbd-backlight" \
+            "Keyboard backlight device not found"
+        exit 0
+    fi
+
+    brightness "$device" "$@"
+}
+
 # Function to get brightness level
 get_backlight() {
     if [ "$1" == "kbd" ]; then
-        brightnessctl --device='smc::kbd_backlight' info | grep -oP '\(\K[0-9]+(?=%\))'
+        kbd_brightness info | grep -oP '\(\K[0-9]+(?=%\))'
     else
-        brightnessctl info | grep -oP '\(\K[0-9]+(?=%\))'
+        brightness "$(screen_device)" info | grep -oP '\(\K[0-9]+(?=%\))'
     fi
 }
 
 # Adjust brightness
 case $1 in
     mon_up)
-        brightnessctl -e4 -n2 set 5%+
+        brightness "$(screen_device)" -e4 -n2 set 5%+
         icon="brightness-high"
         label="Brightness"
         tag="backlight"
         ;;
     mon_down)
-        brightnessctl -e4 -n0 set 5%-
+        brightness "$(screen_device)" -e4 -n0 set 5%-
         icon="brightness-low"
         label="Brightness"
         tag="backlight"
         ;;
     kbd_up)
-        brightnessctl --device='smc::kbd_backlight' set +10%
+        kbd_brightness set +10%
         icon="keyboard-brightness"
         label="Keyboard Backlight"
         tag="kbd-backlight"
         ;;
     kbd_down)
-        brightnessctl --device='smc::kbd_backlight' set 10%-
+        kbd_brightness set 10%-
         icon="keyboard-brightness"
         label="Keyboard Backlight"
         tag="kbd-backlight"
