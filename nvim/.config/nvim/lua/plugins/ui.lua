@@ -1,13 +1,14 @@
 return {
   -- 테마
   {
-    "maxmx03/solarized.nvim",
+    "sainnhe/everforest",
     lazy = false,
     priority = 1000,
     config = function()
-      require("solarized").setup({ theme = "neo" })
       vim.o.background = "light"
-      vim.cmd.colorscheme("solarized")
+      vim.g.everforest_better_performance = 1
+      vim.cmd.colorscheme("everforest")
+      vim.api.nvim_set_hl(0, "Comment", { fg = "#7a8478", italic = true })
     end,
   },
 
@@ -25,7 +26,7 @@ return {
 
       require("lualine").setup({
         options = {
-          theme = "solarized_light",
+          theme = "everforest",
           component_separators = { left = "|", right = "|" },
           section_separators = { left = "", right = "" },
         },
