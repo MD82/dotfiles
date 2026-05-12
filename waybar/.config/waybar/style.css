@@ -9,6 +9,7 @@ window#waybar {
 }
 
 #workspaces,
+#custom-minimized,
 #window,
 #network,
 #custom-volume,
@@ -20,14 +21,32 @@ window#waybar {
 }
 
 #workspaces button {
-    padding: 0 4px;
-    color: #d0d0d0;
+    min-width: 18px;
+    padding: 0 5px;
+    color: #6b7280;
     background: transparent;
     border: none;
 }
 
+#workspaces button.visible,
+#workspaces button.occupied {
+    color: #d0d0d0;
+}
+
 #workspaces button.active {
     color: #ffffff;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+#custom-minimized {
+    color: #9ca3af;
+    padding-left: 2px;
+    padding-right: 8px;
+}
+
+#custom-minimized.has-windows {
+    color: #ffd166;
 }
 
 #custom-power-mode.save {

@@ -143,7 +143,10 @@ listener {
       follow_mouse = 0,
       sensitivity = 0,
       touchpad = {
+        tap_to_click = true,
+        tap_and_drag = true,
         natural_scroll = true,
+        disable_while_typing = true,
       },
     },
     binds = {
@@ -292,7 +295,10 @@ listener {
       follow_mouse = 0,
       sensitivity = -0.5,
       touchpad = {
+        tap_to_click = true,
+        tap_and_drag = true,
         natural_scroll = false,
+        disable_while_typing = true,
       },
     },
     binds = {

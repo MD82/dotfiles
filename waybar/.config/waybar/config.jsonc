@@ -5,6 +5,7 @@
     "spacing": 6,
     "modules-left": [
         "hyprland/workspaces",
+        "custom/minimized",
         "hyprland/window"
     ],
     "modules-right": [
@@ -16,15 +17,23 @@
         "tray"
     ],
     "hyprland/workspaces": {
-        "format": "{icon}",
+        "format": "{name}",
         "format-icons": {
             "active": "●",
+            "occupied": "●",
+            "empty": "○",
             "default": "○"
         }
     },
     "hyprland/window": {
         "max-length": 60,
         "separate-outputs": true
+    },
+    "custom/minimized": {
+        "exec": "bash ~/.config/waybar/scripts/minimized-count",
+        "return-type": "json",
+        "interval": 1,
+        "tooltip": true
     },
     "network": {
         "format-wifi": "{essid} {signalStrength}%",

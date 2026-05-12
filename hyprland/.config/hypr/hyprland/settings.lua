@@ -30,6 +30,20 @@ function M.setup(ctx)
 
   local appearance = (os_profile and os_profile.appearance) or {}
   local input = (os_profile and os_profile.input) or {}
+  local touchpad = input.touchpad or {}
+  local function bool_keyword(value)
+    return value and "true" or "false"
+  end
+
+  local function apply_touchpad_hyphen_options()
+    if verify_config then
+      return
+    end
+
+    hl.exec_cmd(hyprctl_command .. " keyword input:touchpad:tap-to-click " .. bool_keyword(touchpad.tap_to_click ~= false))
+    hl.exec_cmd(hyprctl_command .. " keyword input:touchpad:tap-and-drag " .. bool_keyword(touchpad.tap_and_drag ~= false))
+  end
+
   hl.config({
     input = {
       kb_layout = "us",
@@ -42,7 +56,8 @@ function M.setup(ctx)
       follow_mouse = input.follow_mouse or 1,
       sensitivity = input.sensitivity or 0,
       touchpad = {
-        natural_scroll = input.touchpad and input.touchpad.natural_scroll or false,
+        natural_scroll = touchpad.natural_scroll or false,
+        disable_while_typing = touchpad.disable_while_typing ~= false,
       },
     },
     cursor = {
@@ -115,6 +130,12 @@ function M.setup(ctx)
       exit_window_retains_fullscreen = true,
     },
   })
+  hl.gesture({
+    fingers = 4,
+    direction = "horizontal",
+    action = "workspace",
+  })
+  apply_touchpad_hyphen_options()
 
   hl.curve("overshoot", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.1 } } })
   hl.curve("smoothOut", { type = "bezier", points = { { 0.36, 1 }, { 0.3, 1 } } })
