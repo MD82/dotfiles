@@ -80,7 +80,6 @@ link_hyprland() {
 case "$OS" in
   macos)
     link_dir_if_exists "$DOTFILES/ghostty/.config/ghostty" "$HOME/.config/ghostty"
-    link_dir_if_exists "$DOTFILES/zellij" "$HOME/.config/zellij"
     ;;
   arch)
     link_hyprland
