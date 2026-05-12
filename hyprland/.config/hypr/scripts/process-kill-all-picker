@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+choice="$(
+  ps -u "$USER" -o comm= |
+    sed '/^[[:space:]]*$/d' |
+    sort -u |
+    fuzzel --dmenu --prompt 'Kill all: '
+)"
+
+[ -n "$choice" ] || exit 0
+
+pkill -u "$USER" -x "$choice"
+notify-send 'Processes killed' "$choice" 2>/dev/null || true

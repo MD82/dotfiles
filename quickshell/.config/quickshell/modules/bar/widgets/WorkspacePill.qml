@@ -15,9 +15,10 @@ import "../../../services/" as Services
 Item {
     id: root
 
+    required property var screen
     property int workspaceId: 1
     property bool active: false
-    property bool hovered: mouseArea.containsMouse
+    property bool hovered: false
 
     property var windowsInWs: Services.HyprlandData.windowList.filter(
         w => w.workspace.id === root.workspaceId
@@ -128,13 +129,8 @@ Item {
     MouseArea {
         id: mouseArea
         anchors.fill: parent
-        hoverEnabled: true
-        onClicked: {
-            console.log("[WorkspacePill] clicked, id:", root.workspaceId, "active:", root.active)
-            if (!root.active)
-                Hyprland.dispatch(`workspace ${root.workspaceId}`)
-        }
-        onPressed: console.log("[WorkspacePill] pressed at", mouse.x, mouse.y, "size:", width, "x", height)
-        cursorShape: Qt.PointingHandCursor
+        hoverEnabled: false
+        acceptedButtons: Qt.NoButton
+        cursorShape: Qt.ArrowCursor
     }
 }

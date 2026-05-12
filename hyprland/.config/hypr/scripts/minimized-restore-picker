@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+workspace_id="${1:-1}"
+monitor_id="${2:-}"
+
+items="$(
+  hyprctl clients -j |
+    jq -r --arg monitor_id "$monitor_id" '
+      .[]
+      | select((.workspace.name // "") | contains("minimized"))
+      | select($monitor_id == "" or (.monitor | tostring) == $monitor_id)
+      | [
+          .address,
+          ((.class // "window") + " - " + (.title // .initialTitle // .address))
+        ]
+      | @tsv
+    '
+)"
+
+[ -n "$items" ] || exit 0
+
+choice="$(printf '%s\n' "$items" | fuzzel --dmenu --prompt 'Restore: ')"
+[ -n "$choice" ] || exit 0
+
+address="${choice%%	*}"
+[ -n "$address" ] || exit 0
+
+hyprctl eval "_G.im_hyprland_restore_minimized_window(\"${address}\")" >/dev/null

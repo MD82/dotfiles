@@ -23,7 +23,7 @@ IslandBase {
     property var monitorData: {
         const monitors = Services.HyprlandData.monitors;
         for (let i = 0; i < monitors.length; i++) {
-            if (monitors[i].name === root.screen.name)
+            if (root.screen !== null && monitors[i].name === root.screen.name)
                 return monitors[i];
         }
         return null;
@@ -36,17 +36,22 @@ IslandBase {
         return base.concat(extra).sort((a, b) => a - b);
     }
 
-    property int activeId: Services.HyprlandData.activeWorkspace?.id ?? 1
+    property int activeId: root.monitorData?.activeWorkspace?.id ?? Services.HyprlandData.activeWorkspace?.id ?? 1
 
     RowLayout {
         id: wsRow
         spacing: 4
+
+        MinimizedPill {
+            screen: root.screen
+        }
 
         Repeater {
             model: root.visibleIds
 
             delegate: WorkspacePill {
                 required property int modelData
+                screen: root.screen
                 workspaceId: modelData
                 active: modelData === root.activeId
             }

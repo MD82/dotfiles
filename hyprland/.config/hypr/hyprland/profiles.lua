@@ -24,6 +24,16 @@ local function detect_os_id()
   return "arch"
 end
 
+local layout_profile = {
+  columns_layout = "dwindle",
+  cycle = { "dwindle", "master", "scrolling" },
+  names = {
+    dwindle = "Dwindle",
+    master = "Large main",
+    scrolling = "Scrolling",
+  },
+}
+
 local profiles = {
   arch = {
     file_manager = "env EDITOR=nvim VISUAL=nvim footclient -a yazi -T yazi yazi",
@@ -192,7 +202,6 @@ listener {
     },
     hyprctl = "hyprctl",
     jq = "jq",
-    fallback_layout = "dwindle",
   },
   cachyos = {
     file_manager = "yazi",
@@ -313,7 +322,6 @@ listener {
     window_rules = {},
     hyprctl = "hyprctl",
     jq = "jq",
-    fallback_layout = "dwindle",
   },
 }
 
@@ -323,6 +331,7 @@ function M.setup(ctx)
 
   ctx.os_id = os_id
   ctx.os_profile = profile
+  ctx.layout_profile = layout_profile
   ctx.terminal = profile.terminal or ctx.terminal
   ctx.file_manager = profile.file_manager or ctx.file_manager
   ctx.browser = profile.browser or ctx.browser
@@ -330,10 +339,12 @@ function M.setup(ctx)
   ctx.hyprctl_command = profile.hyprctl or "hyprctl"
   ctx.jq_command = profile.jq or "jq"
 
-  ctx.columns_layout = profile.fallback_layout or "dwindle"
+  ctx.columns_layout = layout_profile.columns_layout or ctx.columns_layout
   ctx.current_layout = ctx.columns_layout
-  ctx.layout_cycle = { ctx.columns_layout, ctx.large_main_layout }
-  ctx.layout_names[ctx.columns_layout] = "Dwindle"
+  ctx.layout_cycle = layout_profile.cycle or { ctx.columns_layout, ctx.large_main_layout }
+  for layout, name in pairs(layout_profile.names or {}) do
+    ctx.layout_names[layout] = name
+  end
 end
 
 return M

@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+choice="$(
+  printf '%s\n' \
+    'Lock' \
+    'Screen off' \
+    'Suspend' \
+    'Log out' \
+    'Reboot' \
+    'Shutdown' |
+    fuzzel --dmenu --prompt 'Power: '
+)"
+
+[ -n "$choice" ] || exit 0
+
+confirm="$(
+  printf '%s\n' 'Cancel' "$choice" |
+    fuzzel --dmenu --prompt "Confirm $choice: "
+)"
+
+[ "$confirm" = "$choice" ] || exit 0
+
+case "$choice" in
+  'Lock')
+    pidof hyprlock || hyprlock --config ~/.config/hypr/hyprlock/hyprlock.conf --grace 0 --immediate-render
+    ;;
+  'Screen off')
+    hyprctl dispatch dpms off
+    ;;
+  'Suspend')
+    systemctl suspend
+    ;;
+  'Reboot')
+    systemctl reboot
+    ;;
+  'Log out')
+    hyprctl dispatch exit
+    ;;
+  'Shutdown')
+    systemctl poweroff
+    ;;
+esac

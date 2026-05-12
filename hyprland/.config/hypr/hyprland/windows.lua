@@ -427,6 +427,24 @@ function M.setup(ctx)
     return true
   end
 
+  _G.im_hyprland_restore_minimized_window = function(address)
+    if not address or address == "" then
+      return
+    end
+
+    hydrate_minimized_windows()
+
+    local window = windows_by_address()[address]
+    local workspace = active_workspace()
+    if not window or not workspace or not is_minimized_window(window) then
+      return
+    end
+
+    remove_minimized_window(window)
+    restore_minimized_window(window, workspace)
+    dispatch(hl.dsp.focus({ window = window_selector(window) }))
+  end
+
   local function window_picker_candidates_for(mode)
     if mode == "minimized" then
       return current_minimized_windows()

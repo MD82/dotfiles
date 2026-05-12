@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+kind="${1:-}"
+
+case "$kind" in
+  sink)
+    start="Sinks:"
+    end="Sources:"
+    prompt="Output: "
+    empty_message="No audio outputs found"
+    notify_title="Audio Output"
+    ;;
+  source)
+    start="Sources:"
+    end="Filters:"
+    prompt="Input: "
+    empty_message="No audio inputs found"
+    notify_title="Audio Input"
+    ;;
+  *)
+    printf 'Usage: %s sink|source\n' "$0" >&2
+    exit 2
+    ;;
+esac
+
+devices="$(
+  wpctl status |
+    sed -n "/$start/,/$end/p" |
+    sed -n 's/^[[:space:]│*]*\([0-9][0-9]*\)\.[[:space:]]*\(.*\)$/\1\t\2/p'
+)"
+
+if [ -z "$devices" ]; then
+  notify-send "$notify_title" "$empty_message" 2>/dev/null || true
+  exit 0
+fi
+
+choice="$(printf '%s\n' "$devices" | fuzzel --dmenu --prompt "$prompt")"
+[ -n "$choice" ] || exit 0
+
+device_id="${choice%%	*}"
+device_name="${choice#*	}"
+
+wpctl set-default "$device_id"
+notify-send "$notify_title" "$device_name" 2>/dev/null || true

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+unit="$(
+  systemctl --user list-units --type=service --all --no-legend --no-pager |
+    awk '{print $1}' |
+    sed '/^[[:space:]]*$/d' |
+    fuzzel --dmenu --prompt 'Service: '
+)"
+
+[ -n "$unit" ] || exit 0
+
+action="$(
+  printf '%s\n' 'Restart' 'Stop' 'Start' |
+    fuzzel --dmenu --prompt "$unit: "
+)"
+
+[ -n "$action" ] || exit 0
+
+case "$action" in
+  'Restart')
+    systemctl --user restart "$unit"
+    ;;
+  'Stop')
+    systemctl --user stop "$unit"
+    ;;
+  'Start')
+    systemctl --user start "$unit"
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+
+notify-send 'systemd' "$action $unit" 2>/dev/null || true

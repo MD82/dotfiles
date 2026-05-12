@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+choice="$(
+  printf '%s\n' \
+    'Dwindle' \
+    'Large main' \
+    'Scrolling' |
+    fuzzel --dmenu --prompt 'Layout: '
+)"
+
+[ -n "$choice" ] || exit 0
+
+case "$choice" in
+  'Dwindle')
+    layout="dwindle"
+    ;;
+  'Large main')
+    layout="master"
+    ;;
+  'Scrolling')
+    layout="scrolling"
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+
+hyprctl eval "_G.im_hyprland_set_layout(\"$layout\")" >/dev/null

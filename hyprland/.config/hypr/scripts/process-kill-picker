@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+choice="$(
+  ps -u "$USER" -o pid=,comm=,args= |
+    sed 's/^[[:space:]]*//' |
+    fuzzel --dmenu --prompt 'Kill process: '
+)"
+
+[ -n "$choice" ] || exit 0
+
+pid="${choice%% *}"
+
+case "$pid" in
+  ''|*[!0-9]*)
+    exit 1
+    ;;
+esac
+
+kill "$pid"
+notify-send 'Process killed' "$choice" 2>/dev/null || true

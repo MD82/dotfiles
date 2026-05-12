@@ -163,6 +163,49 @@ function M.setup(ctx)
     return window and window.group and window.group.size or 0
   end
 
+  local function focus_scrolling_visual_neighbor(forward)
+    local focused = hl.get_active_window()
+    local workspace = active_workspace()
+    if not focused or not workspace then
+      return false
+    end
+
+    local windows = tiled_windows(workspace)
+    if #windows <= 1 then
+      return false
+    end
+
+    sort_windows_by_visual_position(windows)
+
+    local focused_index = nil
+    for index, window in ipairs(windows) do
+      if window.address and window.address == focused.address then
+        focused_index = index
+        break
+      end
+    end
+
+    if not focused_index then
+      return false
+    end
+
+    local target_index
+    if forward then
+      target_index = (focused_index % #windows) + 1
+    else
+      target_index = ((focused_index - 2) % #windows) + 1
+    end
+
+    local target = windows[target_index]
+    local selector = window_selector(target)
+    if not selector then
+      return false
+    end
+
+    dispatch(hl.dsp.focus({ window = selector }))
+    return true
+  end
+
   local function monocle_next()
     local window = hl.get_active_window()
     if window and window.group and window.group.size and window.group.size > 1 then
@@ -170,6 +213,10 @@ function M.setup(ctx)
     elseif current_layout == monocle_layout then
       dispatch(hl.dsp.layout("cyclenext"))
       update_monocle_notice()
+    elseif current_layout == "scrolling" then
+      if not focus_scrolling_visual_neighbor(true) then
+        dispatch(hl.dsp.window.cycle_next({ next = false, tiled = true, floating = false }))
+      end
     else
       dispatch(hl.dsp.window.cycle_next({ next = true, tiled = true, floating = false }))
     end
@@ -182,6 +229,10 @@ function M.setup(ctx)
     elseif current_layout == monocle_layout then
       dispatch(hl.dsp.layout("cycleprev"))
       update_monocle_notice()
+    elseif current_layout == "scrolling" then
+      if not focus_scrolling_visual_neighbor(false) then
+        dispatch(hl.dsp.window.cycle_next({ next = true, tiled = true, floating = false }))
+      end
     else
       dispatch(hl.dsp.window.cycle_next({ next = false, tiled = true, floating = false }))
     end
@@ -521,16 +572,24 @@ function M.setup(ctx)
 
   local function move_window_to_monitor(direction, follow)
     local window = hl.get_active_window()
+    local target_monitor = hl.get_monitor(direction)
+
     if not window then
       return
     end
 
-    local original_monitor = hl.get_active_monitor()
-    dispatch(hl.dsp.window.move({ monitor = direction, follow = follow, window = window_selector(window) }))
-
-    if not follow and original_monitor then
-      dispatch(hl.dsp.focus({ monitor = original_monitor }))
+    if not target_monitor then
+      hl.notification.create({
+        text = "해당 방향의 모니터를 찾을 수 없습니다",
+        duration = 1800,
+        icon = notification_icons.warning,
+        color = "rgba(edb443ff)",
+        font_size = 13,
+      })
+      return
     end
+
+    dispatch(hl.dsp.window.move({ monitor = direction, follow = follow, window = window_selector(window) }))
   end
 
   local function move_window_to_empty_workspace_on_monitor(direction)

@@ -36,6 +36,7 @@ Singleton {
     function updateWorkspaces() {
         getWorkspaces.running = true;
         getActiveWorkspace.running = true;
+        getMonitors.running = true;
     }
 
     function updateAll() {

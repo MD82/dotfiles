@@ -1,4 +1,5 @@
 local shell_ui_command = "hypr_shell_ui"
+local power_menu = "bash ~/.config/hypr/scripts/power-menu"
 local columns_layout = "nStack"
 local large_main_layout = "master"
 local grid_layout = "grid"
@@ -15,8 +16,8 @@ return {
   browser = "firefox",
   menu = "fuzzel",
   shell_ui_command = shell_ui_command,
-  launcher_command = shell_ui_command .. " launcher",
-  run_menu = shell_ui_command .. " run",
+  launcher_command = "fuzzel",
+  power_menu = power_menu,
 
   notification_icons = {
     warning = 0,
