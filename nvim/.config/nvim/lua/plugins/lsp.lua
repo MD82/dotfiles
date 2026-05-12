@@ -1,11 +1,3 @@
-local function executable(path)
-  return vim.fn.executable(path) == 1
-end
-
-local function mason_bin(name)
-  return vim.fn.stdpath("data") .. "/mason/bin/" .. name
-end
-
 vim.o.autocomplete = false
 vim.o.complete = ".,w,b,u,t"
 vim.o.completeopt = "menu,popup,noselect"
@@ -27,6 +19,22 @@ vim.api.nvim_create_autocmd("LspAttach", {
     map("i", "<C-Space>", function()
       vim.lsp.completion.get()
     end, "Trigger LSP completion")
+    map("i", "<C-k>", vim.lsp.buf.signature_help, "Signature help")
+    map("i", "<C-f>", "<C-x><C-f>", "Path completion")
+
+    if client:supports_method("textDocument/signatureHelp") and not vim.b[ev.buf].lsp_signature_autocmd then
+      vim.b[ev.buf].lsp_signature_autocmd = true
+      vim.api.nvim_create_autocmd("InsertCharPre", {
+        buffer = ev.buf,
+        callback = function()
+          if vim.v.char == "(" or vim.v.char == "," then
+            vim.schedule(function()
+              vim.lsp.buf.signature_help()
+            end)
+          end
+        end,
+      })
+    end
 
     map("n", "gd", vim.lsp.buf.definition, "Go to definition")
     map("n", "gr", vim.lsp.buf.references, "References")
@@ -44,9 +52,8 @@ vim.api.nvim_create_autocmd("LspAttach", {
   end,
 })
 
-local lua_ls = mason_bin("lua-language-server")
 vim.lsp.config("lua_ls", {
-  cmd = { executable(lua_ls) and lua_ls or "lua-language-server" },
+  cmd = { "lua-language-server" },
   root_markers = { ".luarc.json", ".luarc.jsonc", ".stylua.toml", "stylua.toml", ".git" },
   settings = {
     Lua = {
@@ -56,21 +63,4 @@ vim.lsp.config("lua_ls", {
 })
 vim.lsp.enable("lua_ls")
 
-return {
-  {
-    "mason-org/mason.nvim",
-    opts = {},
-  },
-  {
-    "WhoIsSethDaniel/mason-tool-installer.nvim",
-    dependencies = { "mason-org/mason.nvim" },
-    opts = {
-      ensure_installed = {
-        "lua-language-server",
-        "jdtls",
-        "java-debug-adapter",
-        "java-test",
-      },
-    },
-  },
-}
+return {}
