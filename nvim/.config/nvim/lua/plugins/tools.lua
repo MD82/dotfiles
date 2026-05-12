@@ -3,6 +3,81 @@ local function build_find_command()
 end
 
 local cwd_changed = false
+local gitignore_filter_cache = {}
+
+local function git_root_for(path)
+  local dir = path
+  local stat = dir and vim.uv.fs_stat(dir) or nil
+  if stat and stat.type ~= "directory" then
+    dir = vim.fn.fnamemodify(dir, ":h")
+  end
+
+  return dir and vim.fs.root(dir, ".git") or nil
+end
+
+local function is_gitignored(path)
+  local root = git_root_for(path)
+  if not root then return false end
+
+  gitignore_filter_cache[root] = gitignore_filter_cache[root] or {}
+  local cache = gitignore_filter_cache[root]
+  if cache[path] ~= nil then return cache[path] end
+
+  local rel = vim.fn.fnamemodify(path, ":p"):sub(#vim.fn.fnamemodify(root, ":p") + 1)
+  local result = vim.system({ "git", "-C", root, "check-ignore", "--quiet", "--", rel }):wait()
+  cache[path] = result.code == 0
+  return cache[path]
+end
+
+local function mini_files_filter_gitignore(fs_entry)
+  return not is_gitignored(fs_entry.path)
+end
+
+local function current_file_explorer_path()
+  local buf_type = vim.bo.buftype
+  local buf_name = vim.api.nvim_buf_get_name(0)
+  local path = vim.uv.cwd()
+
+  if buf_type == "" and buf_name ~= "" then
+    local full_path = vim.fn.fnamemodify(buf_name, ":p")
+    local fs_type = vim.uv.fs_stat(full_path and full_path ~= "" and full_path or "")
+    if fs_type then
+      path = fs_type.type == "directory" and full_path or full_path
+    end
+  end
+
+  return path
+end
+
+local function open_workspace_explorer(opts)
+  local mf = require("mini.files")
+  local restore = not cwd_changed
+  cwd_changed = false
+  mf.open(vim.uv.cwd(), restore, opts)
+end
+
+local function open_file_explorer(opts)
+  require("mini.files").open(current_file_explorer_path(), true, opts)
+end
+
+local function open_gitignore_filtered_file_explorer()
+  open_file_explorer({ content = { filter = mini_files_filter_gitignore } })
+end
+
+local function choose_mini_files_explorer()
+  local choices = {
+    { label = "Workspace explorer", action = open_workspace_explorer },
+    { label = "File explorer", action = open_file_explorer },
+    { label = "File explorer (hide .gitignore)", action = open_gitignore_filtered_file_explorer },
+  }
+
+  vim.ui.select(choices, {
+    prompt = "Mini.files:",
+    format_item = function(item) return item.label end,
+  }, function(choice)
+    if choice then choice.action() end
+  end)
+end
 
 local function list_project_files(cwd)
   if vim.fn.executable("rg") == 1 then
@@ -41,33 +116,24 @@ return {
     version = false,
     keys = {
       {
-        "<leader>e",
-        function()
-          local mf = require("mini.files")
-          local restore = not cwd_changed
-          cwd_changed = false
-          mf.open(vim.uv.cwd(), restore)
-        end,
-        desc = "Root explorer",
+        "<C-e>",
+        choose_mini_files_explorer,
+        desc = "Choose explorer",
       },
       {
-        "<leader>E",
-        function()
-          local buf_type = vim.bo.buftype
-          local buf_name = vim.api.nvim_buf_get_name(0)
-          local path = vim.uv.cwd()
-
-          if buf_type == "" and buf_name ~= "" then
-            local full_path = vim.fn.fnamemodify(buf_name, ":p")
-            local fs_type = vim.uv.fs_stat(full_path and full_path ~= "" and full_path or "")
-            if fs_type then
-              path = fs_type.type == "directory" and full_path or full_path
-            end
-          end
-
-          require("mini.files").open(path, true)
-        end,
+        "<leader>ef",
+        open_file_explorer,
         desc = "File explorer",
+      },
+      {
+        "<leader>ew",
+        open_workspace_explorer,
+        desc = "Workspace explorer",
+      },
+      {
+        "<leader>eg",
+        open_gitignore_filtered_file_explorer,
+        desc = "File explorer (hide .gitignore)",
       },
     },
     config = function()
@@ -434,19 +500,41 @@ return {
         on_attach = function(bufnr)
           local gs = package.loaded.gitsigns
 
-          local function map(mode, l, r)
-            vim.keymap.set(mode, l, r, { buffer = bufnr })
+          local function map(mode, l, r, desc)
+            vim.keymap.set(mode, l, r, { buffer = bufnr, desc = desc })
           end
 
-          map("n", "]c", gs.next_hunk)
-          map("n", "[c", gs.prev_hunk)
-          map("n", "<leader>hs", gs.stage_hunk)
-          map("n", "<leader>hr", gs.reset_hunk)
-          map("n", "<leader>hp", gs.preview_hunk)
-          map("n", "<leader>hb", gs.toggle_current_line_blame)
-          map("n", "<leader>gd", gs.diffthis)
-          map("n", "<leader>gs", function() vim.cmd("terminal git status") end)
-          map("n", "<leader>gc", function() vim.cmd("terminal git commit") end)
+          local function open_git_diff()
+            local source_win = vim.api.nvim_get_current_win()
+            local opened_wins = {}
+            for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+              opened_wins[win] = true
+            end
+
+            gs.diffthis(nil, { vertical = true, split = "rightbelow" }, function()
+              vim.schedule(function()
+                if not vim.api.nvim_win_is_valid(source_win) then return end
+
+                local tabpage = vim.api.nvim_win_get_tabpage(source_win)
+                for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
+                  if not opened_wins[win] and vim.api.nvim_win_is_valid(win) then
+                    vim.api.nvim_set_current_win(win)
+                    return
+                  end
+                end
+              end)
+            end)
+          end
+
+          map("n", "]c", gs.next_hunk, "다음 Git 변경으로 이동")
+          map("n", "[c", gs.prev_hunk, "이전 Git 변경으로 이동")
+          map("n", "<leader>hs", gs.stage_hunk, "Hunk stage")
+          map("n", "<leader>hr", gs.reset_hunk, "Hunk reset")
+          map("n", "<leader>hp", gs.preview_hunk, "Hunk preview")
+          map("n", "<leader>hb", gs.toggle_current_line_blame, "현재 줄 blame 토글")
+          map("n", "<leader>gd", open_git_diff, "Git diff")
+          map("n", "<leader>gs", function() vim.cmd("botright 12split | terminal git status") end, "Git status")
+          map("n", "<leader>gc", function() vim.cmd("botright 12split | terminal git commit") end, "Git commit")
         end,
       })
     end,
