@@ -71,22 +71,16 @@ link_file_if_exists "$DOTFILES/git/.config/git/ignore" "$HOME/.config/git/ignore
   "git/ignore not found (create $DOTFILES/git/.config/git/ignore to enable)"
 link "$DOTFILES/starship/.config/starship-tty.toml" "$HOME/.config/starship-tty.toml"
 
-link_hyprland() {
-  if [ -d "$DOTFILES/hyprland/.config/hypr" ]; then
-    link "$DOTFILES/hyprland/.config/hypr" "$HOME/.config/hypr"
-  fi
-}
-
 case "$OS" in
   macos)
     link_dir_if_exists "$DOTFILES/ghostty/.config/ghostty" "$HOME/.config/ghostty"
     ;;
   arch)
-    link_hyprland
+    link_dir_if_exists "$DOTFILES/hyprland/.config/hypr" "$HOME/.config/hypr"
     link_dir_if_exists "$DOTFILES/waybar/.config/waybar" "$HOME/.config/waybar"
     ;;
   cachyos)
-    link_hyprland
+    link_dir_if_exists "$DOTFILES/hyprland/.config/hypr" "$HOME/.config/hypr"
     link_dir_if_exists "$DOTFILES/quickshell/.config/quickshell" "$HOME/.config/quickshell"
     ;;
 esac
