@@ -13,7 +13,11 @@ function M.setup(ctx)
     end
 
     local runtime_dir = os.getenv("XDG_RUNTIME_DIR") or "/tmp"
-    local path = runtime_dir .. "/hypridle-" .. tostring(os_id or "default") .. ".conf"
+    local config_home = runtime_dir .. "/hypridle-" .. tostring(os_id or "default")
+    local config_dir = config_home .. "/hypr"
+    local path = config_dir .. "/hypridle.conf"
+    os.execute("mkdir -p " .. shell_quote(config_dir))
+
     local file = io.open(path, "w")
     if not file then
       return nil
@@ -24,7 +28,7 @@ function M.setup(ctx)
       file:write("\n")
     end
     file:close()
-    return path
+    return config_home
   end
 
   local function start_profile_hypridle()
@@ -32,9 +36,9 @@ function M.setup(ctx)
       return
     end
 
-    local config_path = write_profile_hypridle_config()
-    if config_path then
-      hl.exec_cmd("pkill hypridle; hypridle --config " .. shell_quote(config_path))
+    local config_home = write_profile_hypridle_config()
+    if config_home then
+      hl.exec_cmd("pkill hypridle; env XDG_CONFIG_HOME=" .. shell_quote(config_home) .. " hypridle")
     end
   end
 

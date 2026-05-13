@@ -125,8 +125,8 @@ function M.setup(ctx)
       },
     },
     misc = {
-      force_default_wallpaper = 0,
-      disable_hyprland_logo = true,
+      force_default_wallpaper = -1,
+      disable_hyprland_logo = false,
       exit_window_retains_fullscreen = true,
     },
   })
@@ -221,7 +221,6 @@ function M.setup(ctx)
       pin = true,
       center = true,
       decorate = false,
-      no_shadow = true,
     })
     hl.window_rule({
       match = { title = "^(.*[Rr]umno.*)$" },
@@ -229,7 +228,6 @@ function M.setup(ctx)
       pin = true,
       center = true,
       decorate = false,
-      no_shadow = true,
     })
     hl.window_rule({
       name = "subtle-pinned-window-border",
