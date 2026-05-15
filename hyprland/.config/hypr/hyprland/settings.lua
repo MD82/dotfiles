@@ -64,8 +64,8 @@ function M.setup(ctx)
       persistent_warps = true,
     },
     general = {
-      gaps_in = 5,
-      gaps_out = 10,
+      gaps_in = 0,
+      gaps_out = 3,
       border_size = 2,
       col = {
         active_border = { colors = { "rgba(3b82f6ee)", "rgba(33ccffee)" }, angle = 45 },
@@ -203,7 +203,7 @@ function M.setup(ctx)
       return
     end
 
-    hl.workspace_rule({ workspace = "w[tv1]s[false]", gaps_out = 0, gaps_in = 0 })
+    hl.workspace_rule({ workspace = "w[tv1]s[false]", gaps_out = 3, gaps_in = 0 })
     hl.workspace_rule({ workspace = "f[1]s[false]", gaps_out = 0, gaps_in = 0 })
 
     hl.window_rule({ match = { class = "^()$", title = "^()$" }, float = true })
