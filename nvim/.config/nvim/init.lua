@@ -36,6 +36,6 @@ require("lazy").setup({
   -- colorscheme that will be used when installing plugins.
   install = { colorscheme = { "everforest" } },
   -- automatically check for plugin updates
-  checker = { enabled = true, notify = false },
+  checker = { enabled = false, notify = false },
 })
 vim.o.clipboard = "unnamedplus"

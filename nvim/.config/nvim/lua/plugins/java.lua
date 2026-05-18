@@ -44,7 +44,7 @@ local function jdtls_action(action)
 end
 
 vim.lsp.config("jdtls", {
-  cmd = { "jdtls" },
+  cmd = {"/home/md82/.local/share/nvim/mason/bin/jdtls" },
   filetypes = { "java" },
   root_markers = root_markers,
   settings = {

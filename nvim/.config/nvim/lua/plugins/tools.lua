@@ -4,6 +4,13 @@ end
 
 local cwd_changed = false
 local gitignore_filter_cache = {}
+local project_roots = {
+  { name = "dotfiles", path = "~/.dotfiles" },
+  { name = "projects", path = "~/gitRepository_wsl" },
+  { name = "healthcareSite", path = "~/gitRepository_wsl/ConnectJ/healthcareSite" },
+  { name = "healthcareAdmin", path = "~/gitRepository_wsl/ConnectJ/healthcareAdmin" },
+  { name = "home", path = "~" },
+}
 
 local function git_root_for(path)
   local dir = path
@@ -79,6 +86,37 @@ local function choose_mini_files_explorer()
   end)
 end
 
+local function available_project_roots()
+  local roots = {}
+  for _, project in ipairs(project_roots) do
+    local path = vim.fn.fnamemodify(vim.fn.expand(project.path), ":p")
+    local stat = vim.uv.fs_stat(path)
+    if stat and stat.type == "directory" then
+      table.insert(roots, { name = project.name, path = path })
+    end
+  end
+  return roots
+end
+
+local function switch_project()
+  local projects = available_project_roots()
+  if #projects == 0 then
+    vim.notify("No configured project directories found", vim.log.levels.WARN, { title = "Project" })
+    return
+  end
+
+  vim.ui.select(projects, {
+    prompt = "Project:",
+    format_item = function(item) return item.name .. "  " .. item.path end,
+  }, function(choice)
+    if not choice then return end
+
+    vim.cmd("silent tcd " .. vim.fn.fnameescape(choice.path))
+    cwd_changed = true
+    require("mini.files").open(choice.path, false)
+  end)
+end
+
 local function list_project_files(cwd)
   if vim.fn.executable("rg") == 1 then
     local result = vim.system(build_find_command(), { cwd = cwd, text = true }):wait()
@@ -121,19 +159,9 @@ return {
         desc = "Choose explorer",
       },
       {
-        "<leader>ef",
-        open_file_explorer,
-        desc = "File explorer",
-      },
-      {
-        "<leader>ew",
-        open_workspace_explorer,
-        desc = "Workspace explorer",
-      },
-      {
-        "<leader>eg",
-        open_gitignore_filtered_file_explorer,
-        desc = "File explorer (hide .gitignore)",
+        "<leader>pp",
+        switch_project,
+        desc = "Switch project",
       },
     },
     config = function()
@@ -290,8 +318,15 @@ return {
         vim.notify("cwd -> " .. new_cwd, vim.log.levels.INFO, { title = "mini.files" })
       end
 
+      local function get_current_fs_entry()
+        local ok, entry = pcall(mini_files.get_fs_entry)
+        return ok and entry or nil
+      end
+
       local function open_entry_from_mini_files()
-        local entry = mini_files.get_fs_entry()
+        local entry = get_current_fs_entry()
+        if not entry then return end
+
         if entry and entry.fs_type == "directory" then
           set_cwd_from_mini_files()
         else
@@ -302,7 +337,7 @@ return {
       end
 
       local function enter_directory_from_mini_files()
-        local entry = mini_files.get_fs_entry()
+        local entry = get_current_fs_entry()
         if entry and entry.fs_type == "directory" then
           mini_files.go_in()
         end
@@ -365,7 +400,6 @@ return {
           width_preview = 40,
         },
         mappings = {
-          close = "<Esc>",
           go_in = "",
           go_in_plus = "",
           go_out = "H",
@@ -374,7 +408,6 @@ return {
           mark_set = "m",
           reset = "<BS>",
           reveal_cwd = "",
-          show_help = "g?",
           synchronize = "=",
           trim_left = "<",
           trim_right = ">",
@@ -464,6 +497,7 @@ return {
   {
     "echasnovski/mini.extra",
     version = false,
+    lazy = true,
     opts = {},
   },
 
@@ -486,7 +520,7 @@ return {
   -- Git
   {
     "lewis6991/gitsigns.nvim",
-    event = "BufReadPre",
+    event = "BufReadPost",
     config = function()
       require("gitsigns").setup({
         signs = {
@@ -496,7 +530,7 @@ return {
           topdelete    = { text = "▔" },
           changedelete = { text = "~" },
         },
-        current_line_blame = true,
+        current_line_blame = false,
         on_attach = function(bufnr)
           local gs = package.loaded.gitsigns
 
@@ -528,10 +562,10 @@ return {
 
           map("n", "]c", gs.next_hunk, "다음 Git 변경으로 이동")
           map("n", "[c", gs.prev_hunk, "이전 Git 변경으로 이동")
-          map("n", "<leader>hs", gs.stage_hunk, "Hunk stage")
-          map("n", "<leader>hr", gs.reset_hunk, "Hunk reset")
-          map("n", "<leader>hp", gs.preview_hunk, "Hunk preview")
-          map("n", "<leader>hb", gs.toggle_current_line_blame, "현재 줄 blame 토글")
+          map("n", "<leader>ghs", gs.stage_hunk, "Hunk stage")
+          map("n", "<leader>ghr", gs.reset_hunk, "Hunk reset")
+          map("n", "<leader>ghp", gs.preview_hunk, "Hunk preview")
+          map("n", "<leader>ghb", gs.toggle_current_line_blame, "현재 줄 blame 토글")
           map("n", "<leader>gd", open_git_diff, "Git diff")
           map("n", "<leader>gs", function() vim.cmd("botright 12split | terminal git status") end, "Git status")
           map("n", "<leader>gc", function() vim.cmd("botright 12split | terminal git commit") end, "Git commit")
@@ -561,11 +595,38 @@ return {
     opts = {},
   },
 
+  -- 확장 textobject (argument/function/tag 등)
+  {
+    "echasnovski/mini.ai",
+    version = false,
+    event = "VeryLazy",
+    opts = {},
+  },
+
   -- 들여쓰기 범위 시각화
   {
     "echasnovski/mini.indentscope",
     version = false,
-    event = "BufReadPre",
+    event = "BufReadPost",
+    init = function()
+      local excluded_filetypes = {
+        dashboard = true,
+        gitcommit = true,
+        help = true,
+        lazy = true,
+        markdown = true,
+        mason = true,
+        terminal = true,
+      }
+
+      vim.api.nvim_create_autocmd("FileType", {
+        callback = function()
+          if excluded_filetypes[vim.bo.filetype] then
+            vim.b.miniindentscope_disable = true
+          end
+        end,
+      })
+    end,
     opts = {
       symbol = "│",
       options = { try_as_border = true },

@@ -21,6 +21,18 @@ map("v", "<A-k>", ":m '<-2<cr>gv=gv",  { desc = "Move line up" })
 -- ESC 대체
 map("i", "jk", "<ESC>", { desc = "Escape insert mode" })
 
+local function go_to_implementation()
+  local clients = vim.lsp.get_clients({ bufnr = 0, method = "textDocument/implementation" })
+  if #clients == 0 then
+    vim.notify("No LSP implementation provider attached", vim.log.levels.WARN, { title = "LSP" })
+    return
+  end
+
+  vim.lsp.buf.implementation()
+end
+
+map("n", "gi", go_to_implementation, { desc = "Go to implementation" })
+
 -- 터미널 토글 (내장)
 local term_buf = nil
 local term_win = nil

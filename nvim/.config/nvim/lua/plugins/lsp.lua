@@ -38,7 +38,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
     map("n", "gd", vim.lsp.buf.definition, "Go to definition")
     map("n", "gr", vim.lsp.buf.references, "References")
-    map("n", "gI", vim.lsp.buf.implementation, "Go to implementation")
+    map("n", "gi", vim.lsp.buf.implementation, "Go to implementation")
     map("n", "<leader>ci", vim.lsp.buf.incoming_calls, "Incoming calls")
     map("n", "<leader>co", vim.lsp.buf.outgoing_calls, "Outgoing calls")
     map("n", "K", vim.lsp.buf.hover, "Hover docs")
